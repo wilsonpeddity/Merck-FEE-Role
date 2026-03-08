@@ -1,0 +1,2619 @@
+<!DOCTYPE html>   
+<html lang="en"> 
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PortfolioPilot — Drug Development Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#F0F4F8;--surface:#FFFFFF;--border:#E2E8F0;
+  --text1:#0F172A;--text2:#475569;--text3:#94A3B8;
+  --hdr:#0B1426;--hdr2:#111827;--accent:#0F766E;
+  --radius:10px;
+}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text1);font-size:13px;min-width:900px}
+
+/* ─── HEADER ─────────────────────────────────────────── */
+.hdr{background:var(--hdr);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;border-bottom:1px solid #1E293B}
+.hdr-brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#0F766E 0%,#3730A3 100%);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#fff;letter-spacing:-1px}
+.brand-name{color:#F8FAFC;font-size:17px;font-weight:700;letter-spacing:-0.3px}
+.brand-tag{color:#64748B;font-size:10px;letter-spacing:0.04em;text-transform:uppercase;margin-top:1px}
+.hdr-filters{display:flex;align-items:center;gap:8px}
+.chip{background:#1E293B;border:1px solid #334155;color:#94A3B8;padding:5px 13px;border-radius:20px;font-size:11px;cursor:pointer;transition:all .2s;user-select:none}
+.chip:hover{border-color:#0F766E;color:#5EEAD4}
+.chip.sel{background:#0F766E;border-color:#0F766E;color:#fff}
+.chip-export{background:#1D4ED8;border-color:#1D4ED8;color:#fff}
+.chip-export:hover{background:#1E40AF;border-color:#1E40AF}
+.hdr-date{color:#64748B;font-size:11px;margin-right:8px}
+
+/* ─── TABS ───────────────────────────────────────────── */
+.tabs{background:var(--hdr2);display:flex;padding:0 28px;border-bottom:1px solid #1F2937}
+.tab{padding:11px 22px;color:#64748B;font-size:12px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;user-select:none}
+.tab:hover{color:#CBD5E1}
+.tab.on{color:#5EEAD4;border-bottom-color:#5EEAD4}
+
+/* ─── CONTENT ────────────────────────────────────────── */
+.content{padding:22px 28px}
+.panel{display:none}.panel.on{display:block}
+
+/* ─── KPI BAR ─────────────────────────────────────────── */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.k1::before{background:linear-gradient(90deg,#3B82F6,#6366F1)}
+.kpi.k2::before{background:linear-gradient(90deg,#10B981,#0F766E)}
+.kpi.k3::before{background:linear-gradient(90deg,#F59E0B,#D97706)}
+.kpi.k4::before{background:linear-gradient(90deg,#EF4444,#F43F5E)}
+.kpi.k5::before{background:linear-gradient(90deg,#8B5CF6,#6D28D9)}
+.kpi-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.kpi-val{font-size:26px;font-weight:700;color:var(--text1);margin:4px 0 2px;line-height:1}
+.kpi-sub{font-size:11px}
+.up{color:#10B981}.dn{color:#EF4444}.neu{color:#94A3B8}
+
+/* ─── SECTION HEADER ──────────────────────────────────── */
+.sec-hdr{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.sec-hdr::before{content:'';width:3px;height:14px;border-radius:2px;background:var(--accent)}
+
+/* ─── GRID ────────────────────────────────────────────── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+.g1{display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:16px}
+.g4060{display:grid;grid-template-columns:2fr 3fr;gap:16px;margin-bottom:16px}
+.g6040{display:grid;grid-template-columns:3fr 2fr;gap:16px;margin-bottom:16px}
+
+/* ─── CARD ────────────────────────────────────────────── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.c-header{display:flex;align-items:center;gap:6px;margin-bottom:2px}
+.c-title{font-size:13px;font-weight:600;color:var(--text1)}
+.c-sub{font-size:11px;color:var(--text3);margin-bottom:14px}
+.c-chart{position:relative}
+
+
+/* ─── KPI DESCRIPTION BUTTON ─────────────────────────── */
+.kpi-hdr{display:flex;align-items:center;gap:5px;margin-bottom:0}
+
+/* ─── DOC BUTTON (user guide) ─────────────────────────── */
+.doc-btn{
+  width:16px;height:16px;border-radius:50%;
+  background:#FFF7ED;border:1.5px solid #FED7AA;
+  color:#C2410C;font-size:9.5px;font-weight:800;line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;
+  cursor:pointer;flex-shrink:0;position:relative;
+  transition:background .18s,border-color .18s,color .18s;
+  user-select:none;font-style:italic;
+}
+.doc-btn:hover{background:#EA580C;border-color:#EA580C;color:#fff;font-style:normal}
+.doc-tip{
+  position:absolute;left:50%;bottom:calc(100% + 10px);
+  transform:translateX(-50%);
+  width:300px;min-width:220px;
+  background:#1C0A00;color:#FED7AA;
+  font-size:11.5px;line-height:1.65;font-weight:400;
+  padding:12px 14px;border-radius:9px;
+  border:1px solid #7C2D12;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);
+  pointer-events:none;
+  opacity:0;visibility:hidden;
+  transition:opacity .2s,visibility .2s;
+  z-index:601;white-space:normal;text-align:left;
+}
+.doc-tip::after{
+  content:'';position:absolute;top:100%;left:50%;
+  transform:translateX(-50%);
+  border:6px solid transparent;
+  border-top-color:#7C2D12;
+}
+.doc-btn:hover .doc-tip{opacity:1;visibility:visible}
+.doc-tip strong{color:#FB923C;font-weight:700;display:block;margin-bottom:5px}
+.doc-tip ul{padding-left:14px;margin:4px 0}
+.doc-tip li{margin-bottom:3px}
+.doc-tip .doc-section{color:#FDBA74;font-weight:600;margin-top:7px;display:block}
+
+/* ─── DESC BUTTON (view definition) ──────────────────── */
+.desc-btn{
+  width:16px;height:16px;border-radius:50%;
+  background:#F5F3FF;border:1.5px solid #C4B5FD;
+  color:#7C3AED;font-size:9px;font-weight:800;line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;
+  cursor:pointer;flex-shrink:0;position:relative;
+  transition:background .18s,border-color .18s,color .18s;
+  user-select:none;letter-spacing:0;
+}
+.desc-btn:hover{background:#7C3AED;border-color:#7C3AED;color:#fff}
+.desc-tip{
+  position:absolute;left:50%;bottom:calc(100% + 10px);
+  transform:translateX(-50%);
+  width:290px;
+  background:#1A0533;color:#E9D5FF;
+  font-size:11.5px;line-height:1.65;font-weight:400;
+  padding:11px 14px;border-radius:9px;
+  border:1px solid #6D28D9;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);
+  pointer-events:none;
+  opacity:0;visibility:hidden;
+  transition:opacity .2s,visibility .2s;
+  z-index:602;white-space:normal;text-align:left;
+}
+.desc-tip::after{
+  content:'';position:absolute;top:100%;left:50%;
+  transform:translateX(-50%);
+  border:6px solid transparent;
+  border-top-color:#6D28D9;
+}
+.desc-btn:hover .desc-tip{opacity:1;visibility:visible}
+.desc-tip strong{color:#C4B5FD;font-weight:700;display:block;margin-bottom:4px}
+
+/* ─── LEGEND ──────────────────────────────────────────── */
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)}
+.leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.leg-rect{width:14px;height:3px;border-radius:2px;flex-shrink:0}
+.leg-dash{width:18px;height:0;border-top:2px dashed;flex-shrink:0}
+.leg-dia{width:8px;height:8px;transform:rotate(45deg);flex-shrink:0}
+
+/* ─── HEATMAP ─────────────────────────────────────────── */
+.hm-wrap{overflow:auto}
+.hm-table{border-collapse:separate;border-spacing:4px;width:100%}
+.hm-th{font-size:10px;color:var(--text3);font-weight:600;text-align:center;padding:2px 4px;white-space:nowrap}
+.hm-row-lbl{font-size:10px;color:var(--text2);font-weight:500;text-align:right;padding-right:8px;white-space:nowrap}
+.hm-cell{border-radius:6px;width:56px;height:36px;text-align:center;vertical-align:middle;cursor:pointer;transition:transform .15s,box-shadow .15s;font-size:11px;font-weight:700;color:#fff}
+.hm-cell:hover{transform:scale(1.1);box-shadow:0 4px 12px rgba(0,0,0,.15)}
+
+/* ─── CALENDAR ────────────────────────────────────────── */
+.cal-outer{overflow-x:auto;padding-bottom:4px}
+.cal-months{display:flex;gap:0;margin-left:24px;margin-bottom:4px}
+.cal-month-lbl{font-size:9px;color:var(--text3);flex:1;min-width:0}
+.cal-body{display:flex;gap:2px}
+.cal-days-col{display:flex;flex-direction:column;gap:2px;margin-right:4px;justify-content:space-around}
+.cal-day-lbl{font-size:9px;color:var(--text3);height:10px;line-height:10px}
+.cal-weeks{display:flex;gap:2px}
+.cal-week{display:flex;flex-direction:column;gap:2px}
+.cal-sq{cursor:pointer;transition:transform .1s;box-sizing:border-box}
+.cal-sq:hover{transform:scale(1.5)}
+.cal-leg{display:flex;align-items:center;gap:4px;margin-top:8px;font-size:12px;color:var(--text3)}
+
+canvas{display:block;max-width:100%}
+
+/* ─── TOOLTIP ─────────────────────────────────────────── */
+#tt{position:fixed;background:rgba(15,23,42,.9);color:#F8FAFC;padding:8px 12px;border-radius:6px;font-size:11px;pointer-events:none;display:none;z-index:999;border:1px solid #334155;line-height:1.6}
+
+/* ─── FILTER SIDEBAR ──────────────────────────────────── */
+.filter-layout{display:flex;gap:0;min-height:calc(100vh - 120px)}
+.filter-sidebar{
+  width:280px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);margin:0 0 22px 0;padding:16px;max-height:calc(100vh - 140px);
+  overflow-y:auto;position:sticky;top:90px;align-self:flex-start;
+}
+.filter-sidebar.collapsed{width:48px;padding:12px 8px}
+.filter-sidebar.collapsed .filter-section,.filter-sidebar.collapsed .filter-label,
+.filter-sidebar.collapsed .filter-input,.filter-sidebar.collapsed .filter-multi,
+.filter-sidebar.collapsed .filter-search-wrap,.filter-sidebar.collapsed .asset-search-wrap,
+.filter-sidebar.collapsed .filter-clear,.filter-sidebar.collapsed .filter-header-text{display:none!important}
+.filter-sidebar.collapsed .filter-header{justify-content:center;margin-bottom:0}
+.filter-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-shrink:0}
+.filter-header-text{font-size:11px;font-weight:600;color:var(--text2)}
+.filter-toggle{width:28px;height:28px;border-radius:6px;flex-shrink:0;
+  background:#E2E8F0;border:1px solid #CBD5E1;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:#475569}
+.filter-toggle:hover{background:#CBD5E1;color:#334155;border-color:#94A3B8}
+.filter-section{margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.filter-section:last-child{border-bottom:none}
+.filter-section-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px}
+.filter-label{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block}
+.filter-input,.filter-select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:#fff;color:var(--text1)}
+.filter-select{appearance:auto;cursor:pointer}
+.filter-multi{display:flex;flex-wrap:wrap;gap:6px;max-height:80px;overflow-y:auto}
+.filter-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;user-select:none;border:1px solid var(--border);background:#F8FAFC;color:var(--text2)}
+.filter-chip:hover{background:#E2E8F0;border-color:#94A3B8}
+.filter-chip.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.filter-chip .fc-x{font-size:10px;opacity:.8}
+.filter-search-wrap{position:relative}
+.filter-search-wrap input{padding-right:28px}
+.filter-search-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:180px;overflow-y:auto;z-index:100;margin-top:2px;display:none}
+.filter-search-list.open{display:block}
+.filter-search-item{padding:8px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid #F1F5F9}
+.filter-search-item:last-child{border-bottom:none}
+.filter-search-item:hover,.filter-search-item.sel{background:#F0FDF4;color:var(--accent)}
+.filter-range{display:flex;align-items:center;gap:8px;margin-top:6px}
+.filter-range input[type=range]{flex:1;height:6px;-webkit-appearance:none;appearance:none;background:#E2E8F0;border-radius:3px}
+.filter-range input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.filter-range-val{font-size:11px;color:var(--text3);min-width:60px;text-align:right}
+.filter-clear{font-size:11px;color:var(--accent);cursor:pointer;margin-top:8px;text-decoration:underline}
+.filter-clear:hover{color:#0D9488}
+.asset-search-wrap{margin-bottom:16px;position:relative}
+.asset-search-wrap input{width:100%;padding:10px 36px 10px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px}
+.asset-search-wrap input:focus{outline:none;border-color:var(--accent)}
+.asset-search-wrap .search-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#94A3B8;font-size:14px;pointer-events:none}
+.asset-autocomplete{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);max-height:220px;overflow-y:auto;z-index:101;margin-top:4px;display:none}
+.asset-autocomplete.open{display:block}
+.asset-autocomplete-item{padding:10px 14px;font-size:12px;cursor:pointer;border-bottom:1px solid #F1F5F9;display:flex;justify-content:space-between;align-items:center}
+.asset-autocomplete-item:last-child{border-bottom:none}
+.asset-autocomplete-item:hover{background:#F0FDF4}
+.asset-autocomplete-item .aa-meta{font-size:10px;color:#94A3B8}
+</style>
+</head>
+<body>
+
+<div id="tt"></div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-brand">
+    <div class="brand-mark">Pp</div>
+    <div>
+      <div class="brand-name">PortfolioPilot</div>
+      <div class="brand-tag">Drug Development Portfolio Intelligence</div>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab on" onclick="switchTab(0)">Portfolio &amp; Program</div>
+  <div class="tab" onclick="switchTab(1)">Risk, Cost &amp; Patient Demographics</div>
+  <div class="tab" onclick="switchTab(2)">Operational Views</div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+  <div class="filter-layout">
+    <!-- FILTER SIDEBAR (Scope) -->
+    <aside class="filter-sidebar" id="filterSidebar">
+      <div class="filter-header">
+        <span class="filter-header-text">Filters</span>
+        <button class="filter-toggle" id="filterToggle" title="Collapse filters" aria-label="Collapse filters">◀</button>
+      </div>
+
+      <!-- Drill-Down Search -->
+      <div class="asset-search-wrap">
+        <input type="text" id="assetSearch" placeholder="Search asset/program (e.g. OncoZen, PRG-001)..." autocomplete="off">
+        <span class="search-icon">🔍</span>
+        <div class="asset-autocomplete" id="assetAutocomplete"></div>
+      </div>
+
+      <!-- 1. Primary Portfolio Filters -->
+      <div class="filter-section">
+        <div class="filter-section-title">Primary Portfolio</div>
+        <label class="filter-label">Therapeutic Area</label>
+        <div class="filter-multi" id="filterTA"></div>
+        <label class="filter-label">Development Phase</label>
+        <div class="filter-multi" id="filterPhase"></div>
+        <label class="filter-label">Program Status</label>
+        <select class="filter-select" id="filterStatus">
+          <option value="">All</option>
+          <option value="On Track">On Track</option>
+          <option value="At Risk">At Risk</option>
+          <option value="Delayed">Delayed</option>
+        </select>
+        <label class="filter-label">Indication</label>
+        <div class="filter-search-wrap">
+          <input type="text" class="filter-input" id="filterIndication" placeholder="Search indication..." autocomplete="off">
+          <div class="filter-search-list" id="filterIndicationList"></div>
+        </div>
+        <div class="filter-multi" id="filterIndicationSelected"></div>
+      </div>
+
+      <!-- 2. Operational & Execution -->
+      <div class="filter-section">
+        <div class="filter-section-title">Operational</div>
+        <label class="filter-label">Geographic Region</label>
+        <select class="filter-select" id="filterRegion">
+          <option value="">All</option>
+          <option value="North America">North America</option>
+          <option value="EMEA">EMEA</option>
+          <option value="APAC">APAC</option>
+          <option value="LATAM">LATAM</option>
+        </select>
+        <label class="filter-label">Study Modality</label>
+        <div class="filter-multi" id="filterModality"></div>
+        <label class="filter-label">Lead Scientist / PM</label>
+        <select class="filter-select" id="filterLead">
+          <option value="">All</option>
+          <option value="Dr. Sarah Chen">Dr. Sarah Chen</option>
+          <option value="Dr. Marcus Webb">Dr. Marcus Webb</option>
+          <option value="Dr. Elena Rossi">Dr. Elena Rossi</option>
+          <option value="Dr. James Okonkwo">Dr. James Okonkwo</option>
+          <option value="Dr. Yuki Tanaka">Dr. Yuki Tanaka</option>
+        </select>
+      </div>
+
+      <!-- 3. Financial & Timeframe -->
+      <div class="filter-section">
+        <div class="filter-section-title">Financial & Timeframe</div>
+        <label class="filter-label">Fiscal Year / Quarter</label>
+        <select class="filter-select" id="filterFYQ">
+          <option value="FY2026-Q1">FY 2026 Q1</option>
+          <option value="FY2026-Q2">FY 2026 Q2</option>
+          <option value="FY2026-Q3">FY 2026 Q3</option>
+          <option value="FY2026-Q4">FY 2026 Q4</option>
+          <option value="FY2025-Q4">FY 2025 Q4</option>
+        </select>
+        <label class="filter-label">Budget Threshold ($M)</label>
+        <div class="filter-range">
+          <input type="range" id="filterBudgetMin" min="0" max="50" value="0" step="5" title="Min">
+          <span class="filter-range-val" id="filterBudgetVal">$0M – $50M</span>
+        </div>
+        <div class="filter-range">
+          <input type="range" id="filterBudgetMax" min="0" max="50" value="50" step="5" title="Max">
+        </div>
+      </div>
+
+      <div class="filter-clear" id="filterClear">Clear all filters</div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main style="flex:1;min-width:0">
+
+  <!-- KPI ROW -->
+  <div class="kpi-row">
+    <div class="kpi k1">
+      <div class="kpi-hdr">
+        <div class="kpi-lbl">Active Assets</div>
+        <div class="desc-btn" onmouseenter="showTT(event,'<strong>Active Assets</strong><br>Total programs in active development (Discovery → Regulatory). The +3 increase this quarter reflects 2 new Phase I entries in Oncology and 1 Pre-Clinical asset advancing to Phase I in Neurology.')" onmouseleave="hideTT()">D</div>
+      </div>
+      <div class="kpi-val">47</div>
+      <div class="kpi-sub up">↑ 3 vs last quarter</div>
+    </div>
+    <div class="kpi k2">
+      <div class="kpi-hdr">
+        <div class="kpi-lbl">Patients Enrolled</div>
+        <div class="desc-btn" onmouseenter="showTT(event,'<strong>Patients Enrolled</strong><br>Cumulative patients successfully enrolled across all active trials year-to-date. Running 8.2% ahead of plan, driven by strong recruitment at NEXUS-02 (North America) and PRISM-01 (APAC) sites.')" onmouseleave="hideTT()">D</div>
+      </div>
+      <div class="kpi-val">12,840</div>
+      <div class="kpi-sub up">↑ 8.2% vs plan</div>
+    </div>
+    <div class="kpi k3">
+      <div class="kpi-hdr">
+        <div class="kpi-lbl">Total R&amp;D Budget</div>
+        <div class="desc-btn" onmouseenter="showTT(event,'<strong>Total R&amp;D Budget</strong><br>Planned R&amp;D expenditure for FY 2026 across all programs and phases. The −3% variance reflects Phase III manufacturing scale-up overruns, partially offset by Pre-Clinical cost savings.')" onmouseleave="hideTT()">D</div>
+      </div>
+      <div class="kpi-val">$2.3B</div>
+      <div class="kpi-sub dn">↓ 3% budget variance</div>
+    </div>
+    <div class="kpi k4">
+      <div class="kpi-hdr">
+        <div class="kpi-lbl">At-Risk Programs</div>
+        <div class="desc-btn" onmouseenter="showTT(event,'<strong>At-Risk Programs</strong><br>Programs flagged for schedule slippage, cost overruns, or safety signals requiring escalated management attention. 2 new entries this quarter — 1 upgraded to Critical status, 1 newly flagged as At-Risk.')" onmouseleave="hideTT()">D</div>
+      </div>
+      <div class="kpi-val">6</div>
+      <div class="kpi-sub dn">↑ 2 this quarter</div>
+    </div>
+    <div class="kpi k5">
+      <div class="kpi-hdr">
+        <div class="kpi-lbl">Avg PTRS</div>
+        <div class="desc-btn" onmouseenter="showTT(event,'<strong>Avg PTRS</strong><br>Portfolio-weighted Probability of Technical &amp; Regulatory Success across all active assets. The +2 pt improvement vs. last year reflects advancement of higher-PTRS Phase III assets and two Phase II positive readouts.')" onmouseleave="hideTT()">D</div>
+      </div>
+      <div class="kpi-val">34%</div>
+      <div class="kpi-sub up">↑ 2 pts vs last year</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ TAB 1 ═══════════════ -->
+  <div class="panel on" id="p0">
+    <div class="sec-hdr">Portfolio &amp; Program Overview</div>
+
+    <!-- Row 1: Funnel + Sunburst -->
+    <div class="g4060">
+      <div class="card">
+        <div class="c-header">
+          <div class="c-title">Phase Distribution</div>
+        </div>
+        <div class="c-sub">Asset count at each development stage</div>
+        <canvas id="cFunnel" height="380" style="display:block;width:100%"></canvas>
+      </div>
+      <div class="card">
+        <div class="c-header">
+          <div class="c-title">Therapeutic Area</div>
+        </div>
+        <div class="c-sub">Portfolio hierarchy: Area → Indication → Phase</div>
+        <canvas id="cSunburst" height="420" style="display:block;width:100%"></canvas>
+      </div>
+    </div>
+
+    <!-- Row 2: Nested Gantt (3fr) | S-Curve (2fr) -->
+    <div style="display:grid;grid-template-columns:3fr 2fr;gap:16px;margin-bottom:16px">
+
+      <div class="card">
+        <div class="c-header">
+          <div class="c-title">Program Timeline</div>
+        </div>
+        <div class="c-sub">Click program rows to expand/collapse studies · FPI = First Patient In · LPO = Last Patient Out · <span style="color:#EF4444">Red dashed = Today</span></div>
+        <div style="overflow-x:auto">
+          <canvas id="cGantt" width="1060" height="300"></canvas>
+        </div>
+        <div class="legend">
+          <div class="leg-item"><div class="leg-rect" style="background:#0F766E;height:10px;border-radius:3px;width:18px"></div>Program</div>
+          <div class="leg-item"><div class="leg-rect" style="background:#5EEAD4;height:7px;border-radius:3px;width:18px"></div>Study</div>
+          <div class="leg-item"><div class="leg-dia" style="background:#10B981"></div>Milestone</div>
+          <div class="leg-item"><div class="leg-dash" style="border-color:#EF4444;border-style:dashed"></div>Today</div>
+        </div>
+      </div>
+
+      <div class="card" style="display:flex;flex-direction:column">
+        <div class="c-header">
+          <div class="c-title">Enrollment S-Curve</div>
+        </div>
+        <div class="c-sub">Cumulative patient recruitment over FY 2026</div>
+        <div style="flex:1;position:relative;min-height:160px">
+          <canvas id="cSCurve"></canvas>
+        </div>
+        <div class="legend">
+          <div class="leg-item"><div class="leg-dash" style="border-color:#D97706"></div>Planned</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#1E3A8A"></div>Actual</div>
+          <div class="leg-item"><div class="leg-dash" style="border-color:#1E3A8A"></div>Forecast</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Row 3: Portfolio Milestone Waterfall (3fr) | Asset Health Heatmap (2fr) -->
+    <div style="display:grid;grid-template-columns:3fr 2fr;gap:16px;margin-bottom:16px">
+
+      <div class="card" style="display:flex;flex-direction:column">
+        <div class="c-header">
+          <div class="c-title">Portfolio Milestone Waterfall</div>
+        </div>
+        <div class="c-sub">Baseline vs. current projection · Top 5 programs by R&amp;D spend</div>
+        <div style="flex:1;position:relative;min-height:260px">
+          <canvas id="cDrift"></canvas>
+        </div>
+        <div class="legend" style="margin-top:6px">
+          <div class="leg-item"><div class="leg-rect" style="background:#94A3B8;height:8px;border-radius:2px;width:18px"></div>Baseline Plan</div>
+          <div class="leg-item"><div class="leg-rect" style="background:#3B82F6;height:8px;border-radius:2px;width:18px"></div>On Schedule</div>
+          <div class="leg-item"><div class="leg-rect" style="background:#F43F5E;height:8px;border-radius:2px;width:18px"></div>Delayed</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="c-header">
+          <div class="c-title">Asset Health</div>
+        </div>
+        <div class="c-sub">Therapeutic area × program operational health</div>
+        <div class="hm-wrap" id="heatmapDiv"></div>
+        <div class="legend" style="margin-top:10px">
+          <div class="leg-item"><div class="leg-dot" style="background:#34D399"></div>On Track</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#FBBF24"></div>At Risk</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#EF4444"></div>Critical</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════ TAB 2 ═══════════════ -->
+  <div class="panel" id="p1">
+    <div class="sec-hdr">Risk, Cost &amp; Patient Demographics</div>
+
+    <div class="g2">
+      <div class="card">
+        <div class="c-header">
+          <div class="c-title">Risk vs. ROI Matrix (PTRS × NPV)</div>
+        </div>
+        <div class="c-sub">Bubble size = relative budget allocation</div>
+        <canvas id="cBubble" height="260"></canvas>
+      </div>
+      <div class="card">
+        <div class="c-header">
+          <div class="c-title">Enrollment by Region &amp; Study</div>
+        </div>
+        <div class="c-sub">Stacked column — geographic patient distribution</div>
+        <canvas id="cStacked" height="260"></canvas>
+      </div>
+    </div>
+
+    <div class="g3">
+      <div class="card">
+        <div class="c-header">
+          <div class="c-title">Budget Allocation by Phase</div>
+        </div>
+        <div class="c-sub">R&amp;D spend distribution across lifecycle</div>
+        <div style="position:relative;width:100%;height:420px">
+          <canvas id="cDonut"></canvas>
+          <div style="position:absolute;top:48%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
+            <div style="font-size:11px;color:#64748B;letter-spacing:.03em">Total R&amp;D</div>
+            <div style="font-size:22px;font-weight:700;color:#0F172A;line-height:1.15">$2.3B</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="c-header">
+          <div class="c-title">Milestone Tracker</div>
+        </div>
+        <div class="c-sub">Actual vs. target across key study metrics</div>
+        <canvas id="cBullet" height="420" style="display:block;width:100%"></canvas>
+      </div>
+      <div class="card">
+        <div class="c-header">
+          <div class="c-title">Screen Failure Cascade</div>
+        </div>
+        <div class="c-sub">Patient waterfall from screening to randomization</div>
+        <canvas id="cWaterfall" height="240"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ TAB 3 ═══════════════ -->
+  <div class="panel" id="p2">
+    <div class="sec-hdr">Operational Views</div>
+
+    <div class="g2">
+      <div class="card">
+        <div class="c-header">
+          <div class="c-title">Patient Protocol Journey</div>
+        </div>
+        <div class="c-sub">Flow volume through cohorts and protocol arms</div>
+        <canvas id="cSankey" height="420" style="display:block;width:100%"></canvas>
+      </div>
+      <div class="card">
+        <div class="c-header">
+          <div class="c-title">Site Activation Times</div>
+        </div>
+        <div class="c-sub">Distribution of days-to-activation by region</div>
+        <canvas id="cBoxplot" height="420" style="display:block;width:100%"></canvas>
+      </div>
+    </div>
+
+    <!-- Row 2: Radar (left, tall) | Calendar + Choropleth stacked (right) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;align-items:stretch">
+
+      <!-- LEFT — Radar stretches to match the combined right-column height -->
+      <div class="card" style="display:flex;flex-direction:column">
+        <div class="c-header">
+            <div class="c-title">Vendor / Site Performance</div>
+        </div>
+        <div class="c-sub">CRO evaluation across operational KPI axes</div>
+        <div style="flex:1;position:relative;min-height:300px">
+          <canvas id="cRadar"></canvas>
+        </div>
+      </div>
+
+      <!-- RIGHT — Calendar on top, Choropleth below -->
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="card">
+          <div class="c-header">
+            <div class="c-title">Data Query Volume</div>
+          </div>
+          <div class="c-sub">Daily query volume raised by clinical monitors (2025)</div>
+          <div id="calDiv"></div>
+        </div>
+        <div class="card" style="flex:1">
+          <div class="c-header">
+            <div class="c-title">Global Trial Footprint</div>
+          </div>
+          <div class="c-sub">Active clinical trial sites by country (shading = site density)</div>
+          <canvas id="cChoropleth" style="display:block;width:100%"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+    </main>
+  </div><!-- end .filter-layout -->
+</div><!-- end .content -->
+
+<script>
+/* ================================================================
+   UTILITY
+================================================================ */
+const tt = document.getElementById('tt');
+function showTT(e, html) {
+  tt.innerHTML = html; tt.style.display = 'block';
+  tt.style.left = (e.clientX + 14) + 'px'; tt.style.top = (e.clientY - 10) + 'px';
+}
+function hideTT() { tt.style.display = 'none'; }
+
+function hex2rgba(hex, a) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+function lerp(a,b,t){ return a + (b-a)*t; }
+function lerpColor(c1, c2, t){
+  const parse = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+  const [r1,g1,b1] = parse(c1), [r2,g2,b2] = parse(c2);
+  return `rgb(${Math.round(lerp(r1,r2,t))},${Math.round(lerp(g1,g2,t))},${Math.round(lerp(b1,b2,t))})`;
+}
+
+function toggleChip(el){ el.classList.toggle('sel'); }
+
+/* ================================================================
+   DASHBOARD DATA — JSON input for all charts
+   Replace DASHBOARD_DATA assignment with fetch('/api/dashboard') or
+   fetch('data.json') to connect to real backend/Snowflake tables.
+================================================================ */
+let DASHBOARD_DATA = {};
+
+function loadDashboardData(){
+  // To connect to backend: replace the assignment below with:
+  //   fetch('/api/dashboard').then(r=>r.json()).then(d=>{ DASHBOARD_DATA=d; initFilters(); applyFilters(); drawFunnel(); ... });
+  // Or load from JSON file: fetch('dashboard-data.json').then(r=>r.json()).then(d=>{ DASHBOARD_DATA=d; initFilters(); applyFilters(); drawFunnel(); drawSunburst(); drawGantt(); initSCurve(); initHeatmap(); initDriftChart(); });
+  DASHBOARD_DATA = {
+    kpis: { activeAssets:47, patientsEnrolled:'12,840', totalBudget:'$2.3B', atRisk:6, avgPTRS:'34%' },
+    funnel: {
+      stages: [
+        { label:'Discovery', count:42, color:'#93C5FD', tc:'#1E3A8A' },
+        { label:'Pre-Clinical', count:28, color:'#60A5FA', tc:'#1E3A8A' },
+        { label:'Phase I', count:18, color:'#3B82F6', tc:'#FFFFFF' },
+        { label:'Phase II', count:11, color:'#4F46E5', tc:'#EEF2FF' },
+        { label:'Phase III', count:6, color:'#4338CA', tc:'#C7D2FE' },
+        { label:'Regulatory', count:2, color:'#312E81', tc:'#A5B4FC' },
+      ]
+    },
+    sunburst: {
+      totalAssets: 47,
+      areas: [
+        { name:'Oncology', color:'#E11D48', children:[
+          { name:'Breast Ca.', v:8, phases:[3,3,2] },
+          { name:'Lung Ca.', v:6, phases:[3,2,1] },
+          { name:'Hematology', v:5, phases:[2,2,1] },
+        ]},
+        { name:'Neurology', color:'#8B5CF6', children:[
+          { name:"Alzheimer's", v:7, phases:[3,2,2] },
+          { name:"Parkinson's", v:4, phases:[2,2] },
+        ]},
+        { name:'Immunology', color:'#06B6D4', children:[
+          { name:'Rheumatoid', v:6, phases:[3,2,1] },
+          { name:'Psoriasis', v:4, phases:[2,2] },
+          { name:'IBD', v:3, phases:[2,1] },
+        ]},
+        { name:'Cardiology', color:'#F59E0B', children:[
+          { name:'Heart Fail.', v:5, phases:[2,2,1] },
+          { name:'Hypertens.', v:3, phases:[2,1] },
+        ]},
+      ]
+    },
+    gantt: {
+      timelineStart: '2024-01-01',
+      timelineEnd: '2027-06-01',
+      today: '2026-03-07',
+      programs: [
+        { id:0, name:'PRG-001  Oncology', color:'#0F766E', start:'2024-01-15', end:'2026-12-31',
+          studies:[
+            { name:'001-A  Ph.I', start:'2024-01-15', end:'2024-10-01', fpi:'2024-02-01', lpo:'2024-09-01', ms:'2024-06-01' },
+            { name:'001-B  Ph.II', start:'2024-06-01', end:'2026-03-01', fpi:'2024-07-01', lpo:'2025-12-01', ms:'2025-03-01' },
+          ]
+        },
+        { id:1, name:'PRG-002  Neurology', color:'#0F766E', start:'2024-03-01', end:'2027-03-01',
+          studies:[
+            { name:'002-A  Ph.II', start:'2024-03-01', end:'2025-09-01', fpi:'2024-04-01', lpo:'2025-08-01', ms:'2024-12-01' },
+            { name:'002-B  Ph.III', start:'2025-01-01', end:'2027-03-01', fpi:'2025-02-01', lpo:'2026-12-01', ms:'2026-06-01' },
+          ]
+        },
+        { id:2, name:'PRG-003  Immunology', color:'#0F766E', start:'2024-06-01', end:'2026-06-01',
+          studies:[
+            { name:'003-A  Ph.I', start:'2024-06-01', end:'2025-06-01', fpi:'2024-07-01', lpo:'2025-05-01', ms:'2024-12-01' },
+          ]
+        },
+        { id:3, name:'PRG-004  Cardiology', color:'#0F766E', start:'2025-01-01', end:'2026-09-01',
+          studies:[
+            { name:'004-A  Ph.II', start:'2025-01-01', end:'2026-09-01', fpi:'2025-02-01', lpo:'2026-07-01', ms:'2025-09-01' },
+          ]
+        },
+      ]
+    },
+    sCurve: {
+      labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+      planned: [0,180,540,1050,1750,2600,3450,4100,4700,5100,5400,5500],
+      actual: [0,150,460,890,1540,2380,3200,3890,4480,null,null,null],
+      forecast: [null,null,null,null,null,null,null,null,4480,4950,5280,5450],
+    },
+    heatmap: {
+      areas: ['Oncology','Neurology','Immunology','Cardiology','Rare Disease'],
+      progs: ['PRG-A','PRG-B','PRG-C','PRG-D','PRG-E'],
+      progToId: {'PRG-A':'PRG-001','PRG-B':'PRG-002','PRG-C':'PRG-003','PRG-D':'PRG-004','PRG-E':'PRG-005'},
+      statusColors: { 'T':'#34D399', 'R':'#FBBF24', 'X':'#EF4444' },
+      statusLabels: { 'T':'On Track','R':'At Risk','X':'Critical' },
+      statusIcons: { 'T':'✓','R':'!','X':'✕' },
+      data: [['T','T','R','T','T'],['R','T','X','T','R'],['T','T','T','R','T'],['T','X','R','T','T'],['R','T','T','T','R']],
+    },
+    bubble: {
+      assets: [
+        {id:'PRG-001',area:'Oncology',x:72,y:1.8,b:18},{id:'PRG-002',area:'Neurology',x:58,y:3.2,b:22},
+        {id:'PRG-003',area:'Immunology',x:45,y:0.9,b:14},{id:'PRG-004',area:'Oncology',x:82,y:2.1,b:12},
+        {id:'PRG-005',area:'Neurology',x:30,y:4.5,b:28},{id:'PRG-006',area:'Cardiology',x:65,y:1.2,b:16},
+        {id:'PRG-007',area:'Rare Disease',x:20,y:0.5,b:10},{id:'PRG-008',area:'Oncology',x:88,y:5.1,b:20},
+        {id:'PRG-009',area:'Immunology',x:50,y:2.8,b:18},{id:'PRG-010',area:'Neurology',x:75,y:3.9,b:30},
+      ]
+    },
+    stacked: {
+      labels: ['AMBER-01','AMBER-02','NEXUS-01','NEXUS-02','PRISM-01','PRISM-02'],
+      datasets: [
+        {label:'North America', data:[450,320,280,510,380,240], backgroundColor:'rgba(59,130,246,.75)', borderColor:'#3B82F6'},
+        {label:'Europe', data:[280,410,350,290,420,310], backgroundColor:'rgba(94,234,212,.65)', borderColor:'#5EEAD4'},
+        {label:'APAC', data:[180,150,280,200,160,190], backgroundColor:'rgba(253,186,116,.70)', borderColor:'#FDBA74'},
+        {label:'LATAM', data:[90,70,110,80,60,100], backgroundColor:'rgba(139,92,246,.75)', borderColor:'#8B5CF6'},
+      ]
+    },
+    donut: {
+      labels: ['Pre-Clinical','Phase I','Phase II','Phase III','Regulatory'],
+      data: [15,22,35,20,8],
+      colors: ['#3B82F6','#10B981','#F59E0B','#8B5CF6','#EC4899'],
+    },
+    bullet: {
+      metrics: [
+        {label:'AMBER-01 Enrollment', target:500, actual:420, max:600, sat:400},
+        {label:'NEXUS-02 Enrollment', target:380, actual:395, max:500, sat:300},
+        {label:'PRISM-01 Sites', target:45, actual:32, max:60, sat:35},
+        {label:'AMBER-02 Sites', target:30, actual:28, max:40, sat:25},
+        {label:'Query Resolution(d)', target:14, actual:20, max:30, sat:18, invert:true},
+      ]
+    },
+    waterfall: {
+      data: [[0,2800],[2320,2800],[2160,2320],[1820,2160],[0,1820]],
+      colors: ['#059669','#F43F5E','#F43F5E','#F43F5E','#059669'],
+      labels: ['Screened','I/E Criteria\n(−480)','Consent\n(−160)','Screen Fail\n(−340)','Randomized'],
+    },
+    sankey: {
+      nodes: [
+        {id:'Screened',x:20,y:40,h:200,color:'#A78BFA'},{id:'Enrolled',x:160,y:40,h:140,color:'#8B5CF6'},
+        {id:'Screen Fail',x:160,y:195,h:45,color:'#F43F5E'},{id:'Arm A',x:300,y:40,h:68,color:'#60A5FA'},
+        {id:'Arm B',x:300,y:118,h:62,color:'#3B82F6'},{id:'Withdrawn',x:430,y:40,h:22,color:'#FB923C'},
+        {id:'Completed A',x:430,y:68,h:40,color:'#34D399'},{id:'Completed B',x:430,y:118,h:44,color:'#10B981'},
+        {id:'Discontinued',x:430,y:168,h:18,color:'#FB923C'},
+      ],
+      flows: [
+        {f:'Screened',t:'Enrolled',v:0.70},{f:'Screened',t:'Screen Fail',v:0.30},
+        {f:'Enrolled',t:'Arm A',v:0.50},{f:'Enrolled',t:'Arm B',v:0.50},
+        {f:'Arm A',t:'Withdrawn',v:0.25},{f:'Arm A',t:'Completed A',v:0.75},
+        {f:'Arm B',t:'Completed B',v:0.72},{f:'Arm B',t:'Discontinued',v:0.28},
+      ]
+    },
+    boxPlot: {
+      regions: [
+        {name:'North America', data:[38,42,45,48,52,58,60,65,68,75,90,110]},
+        {name:'Europe', data:[55,60,62,70,75,78,85,88,95,120,140,145]},
+        {name:'APAC', data:[75,80,85,95,100,105,115,120,130,160,200,210]},
+        {name:'LATAM', data:[88,90,92,100,110,115,125,130,145,180,220,230]},
+      ]
+    },
+    radar: {
+      labels: ['Data Quality','Recruitment\nSpeed','Protocol\nCompliance','Query\nResolution','Site\nManagement','Reporting\nTimeliness'],
+      datasets: [
+        {label:'CRO Alpha', data:[82,68,91,75,85,79], backgroundColor:'rgba(204,251,241,.45)', borderColor:'#0D9488'},
+        {label:'CRO Beta', data:[70,85,72,88,65,71], backgroundColor:'rgba(165,180,252,.3)', borderColor:'#6366F1', borderDash:[5,3]},
+      ]
+    },
+    calendar: {
+      startDate: '2025-03-08',
+      endDate: '2026-03-07',
+      colors: ['#EFF6FF','#BFDBFE','#60A5FA','#2563EB','#1E3A8A'],
+      borders: ['#DBEAFE','transparent','transparent','transparent','transparent'],
+    },
+    choropleth: {
+      countries: [
+        {n:'Canada',sites:42,x:48,y:30,w:175,h:70},{n:'USA',sites:145,x:48,y:100,w:175,h:110},
+        {n:'Mexico',sites:18,x:90,y:210,w:90,h:58},{n:'Brazil',sites:30,x:172,y:230,w:110,h:100},
+        {n:'Argentina',sites:15,x:182,y:330,w:72,h:68},{n:'UK',sites:55,x:355,y:55,w:38,h:38},
+        {n:'Germany',sites:68,x:398,y:55,w:50,h:52},{n:'France',sites:48,x:355,y:97,w:50,h:48},
+        {n:'Spain',sites:32,x:350,y:148,w:52,h:44},{n:'Italy',sites:38,x:406,y:108,w:36,h:60},
+        {n:'Netherlands',sites:22,x:398,y:40,w:40,h:16},{n:'Poland',sites:25,x:446,y:55,w:48,h:52},
+        {n:'Sweden',sites:19,x:440,y:20,w:40,h:36},{n:'Russia',sites:35,x:494,y:30,w:220,h:100},
+        {n:'Turkey',sites:20,x:494,y:128,w:70,h:36},{n:'Israel',sites:18,x:494,y:162,w:28,h:28},
+        {n:'UAE',sites:12,x:530,y:162,w:38,h:28},{n:'S. Africa',sites:14,x:450,y:295,w:65,h:62},
+        {n:'Nigeria',sites:8,x:408,y:240,w:50,h:55},{n:'Egypt',sites:10,x:460,y:200,w:50,h:45},
+        {n:'India',sites:65,x:620,y:145,w:100,h:120},{n:'China',sites:88,x:718,y:85,w:145,h:125},
+        {n:'Japan',sites:52,x:862,y:80,w:45,h:85},{n:'S. Korea',sites:28,x:850,y:148,w:42,h:34},
+        {n:'Australia',sites:20,x:820,y:278,w:110,h:85},{n:'Thailand',sites:16,x:720,y:215,w:48,h:50},
+        {n:'Taiwan',sites:14,x:818,y:170,w:34,h:32},
+      ]
+    },
+    drift: {
+      milestones: [
+        {prog:'PRG-001',lbl:'Trial Start',base:[0,2],curr:[0,2],on:true},
+        {prog:'PRG-001',lbl:'Last Pat. In',base:[10,14],curr:[12,16],on:false},
+        {prog:'PRG-001',lbl:'NDA Filing',base:[26,28],curr:[30,32],on:false},
+        {prog:'PRG-002',lbl:'Trial Start',base:[2,4],curr:[2,4],on:true},
+        {prog:'PRG-002',lbl:'Last Pat. In',base:[15,20],curr:[15,20],on:true},
+        {prog:'PRG-002',lbl:'NDA Filing',base:[32,34],curr:[34,36],on:false},
+        {prog:'PRG-003',lbl:'Trial Start',base:[4,6],curr:[4,6],on:true},
+        {prog:'PRG-003',lbl:'Last Pat. In',base:[12,16],curr:[13,17],on:false},
+        {prog:'PRG-003',lbl:'NDA Filing',base:[24,26],curr:[25,27],on:false},
+        {prog:'PRG-004',lbl:'Trial Start',base:[6,8],curr:[6,8],on:true},
+        {prog:'PRG-004',lbl:'Last Pat. In',base:[18,22],curr:[18,22],on:true},
+        {prog:'PRG-004',lbl:'NDA Filing',base:[30,32],curr:[30,32],on:true},
+        {prog:'PRG-005',lbl:'Trial Start',base:[1,3],curr:[3,5],on:false},
+        {prog:'PRG-005',lbl:'Last Pat. In',base:[16,20],curr:[18,22],on:false},
+        {prog:'PRG-005',lbl:'NDA Filing',base:[28,30],curr:[32,34],on:false},
+      ]
+    },
+  };
+  return DASHBOARD_DATA;
+}
+
+/* ================================================================
+   FILTER SYSTEM — Master Data & Cascading Logic
+================================================================ */
+const MASTER_DATA = {
+  programs: [
+    {id:'PRG-001',name:'PRG-001',ta:'Oncology',phase:'Phase II',status:'At Risk',indication:'Breast Ca.',region:'North America',modality:'Biologic',lead:'Dr. Sarah Chen',budget:580},
+    {id:'PRG-002',name:'PRG-002',ta:'Neurology',phase:'Phase III',status:'On Track',indication:"Alzheimer's",region:'EMEA',modality:'Small Molecule',lead:'Dr. Marcus Webb',budget:520},
+    {id:'PRG-003',name:'PRG-003',ta:'Immunology',phase:'Phase I',status:'On Track',indication:'Rheumatoid',region:'APAC',modality:'Biologic',lead:'Dr. Elena Rossi',budget:460},
+    {id:'PRG-004',name:'PRG-004',ta:'Oncology',phase:'Phase II',status:'On Track',indication:'Lung Ca.',region:'North America',modality:'Small Molecule',lead:'Dr. James Okonkwo',budget:440,alias:['OncoZen']},
+    {id:'PRG-005',name:'PRG-005',ta:'Neurology',phase:'Phase II',status:'Delayed',indication:"Parkinson's",region:'LATAM',modality:'Cell & Gene Therapy',lead:'Dr. Yuki Tanaka',budget:390},
+    {id:'PRG-006',name:'PRG-006',ta:'Cardiology',phase:'Phase II',status:'On Track',indication:'Heart Fail.',region:'North America',modality:'Small Molecule',lead:'Dr. Sarah Chen',budget:320},
+    {id:'PRG-007',name:'PRG-007',ta:'Rare Disease',phase:'Pre-Clinical',status:'At Risk',indication:'Hematology',region:'APAC',modality:'Biologic',lead:'Dr. Marcus Webb',budget:180},
+    {id:'PRG-008',name:'PRG-008',ta:'Oncology',phase:'Phase III',status:'On Track',indication:'Lung Ca.',region:'EMEA',modality:'Biologic',lead:'Dr. Elena Rossi',budget:510},
+    {id:'PRG-009',name:'PRG-009',ta:'Immunology',phase:'Phase II',status:'At Risk',indication:'Psoriasis',region:'APAC',modality:'Small Molecule',lead:'Dr. James Okonkwo',budget:290},
+    {id:'PRG-010',name:'PRG-010',ta:'Neurology',phase:'Phase II',status:'On Track',indication:"Alzheimer's",region:'North America',modality:'Biologic',lead:'Dr. Yuki Tanaka',budget:380},
+  ],
+  therapeuticAreas: ['Oncology','Neurology','Immunology','Cardiology','Rare Disease'],
+  phases: ['Discovery','Pre-Clinical','Phase I','Phase II','Phase III','Phase IV','Regulatory'],
+  indications: ['Breast Ca.','Lung Ca.','Hematology',"Alzheimer's","Parkinson's",'Rheumatoid','Psoriasis','IBD','Heart Fail.','Hypertens.'],
+  modalities: ['Small Molecule','Biologic','Cell & Gene Therapy'],
+};
+
+const FILTER_STATE = {
+  assetSearch: '',
+  ta: [],
+  phase: [],
+  status: '',
+  indication: [],
+  region: '',
+  modality: [],
+  lead: '',
+  fyq: 'FY2026-Q1',
+  budgetMin: 0,
+  budgetMax: 50,
+};
+
+function getFilteredProgramIds(){
+  let ids = MASTER_DATA.programs.map(p=>p.id);
+  if(FILTER_STATE.assetSearch){
+    const q = FILTER_STATE.assetSearch.toLowerCase();
+    ids = ids.filter(id=>{
+      const p = MASTER_DATA.programs.find(x=>x.id===id);
+      if(!p) return false;
+      if(p.id.toLowerCase().includes(q) || p.name.toLowerCase().includes(q) || p.ta.toLowerCase().includes(q) || (p.indication&&p.indication.toLowerCase().includes(q))) return true;
+      if(p.alias && p.alias.some(a=>a.toLowerCase().includes(q))) return true;
+      return false;
+    });
+    return ids;
+  }
+  if(FILTER_STATE.ta.length) ids = ids.filter(id=>FILTER_STATE.ta.includes(MASTER_DATA.programs.find(p=>p.id===id)?.ta));
+  if(FILTER_STATE.phase.length) ids = ids.filter(id=>FILTER_STATE.phase.includes(MASTER_DATA.programs.find(p=>p.id===id)?.phase));
+  if(FILTER_STATE.status) ids = ids.filter(id=>MASTER_DATA.programs.find(p=>p.id===id)?.status===FILTER_STATE.status);
+  if(FILTER_STATE.indication.length) ids = ids.filter(id=>FILTER_STATE.indication.includes(MASTER_DATA.programs.find(p=>p.id===id)?.indication));
+  if(FILTER_STATE.region) ids = ids.filter(id=>MASTER_DATA.programs.find(p=>p.id===id)?.region===FILTER_STATE.region);
+  if(FILTER_STATE.modality.length) ids = ids.filter(id=>FILTER_STATE.modality.includes(MASTER_DATA.programs.find(p=>p.id===id)?.modality));
+  if(FILTER_STATE.lead) ids = ids.filter(id=>MASTER_DATA.programs.find(p=>p.id===id)?.lead===FILTER_STATE.lead);
+  ids = ids.filter(id=>{
+    const b = MASTER_DATA.programs.find(p=>p.id===id)?.budget||0;
+    return b>=FILTER_STATE.budgetMin && b<=FILTER_STATE.budgetMax;
+  });
+  return ids;
+}
+
+function initFilters(){
+  const renderChips = (containerId, options, key, multi=true)=>{
+    const el = document.getElementById(containerId);
+    if(!el) return;
+    el.innerHTML = '';
+    options.forEach(opt=>{
+      const chip = document.createElement('span');
+      chip.className = 'filter-chip' + (FILTER_STATE[key].includes?.(opt) || FILTER_STATE[key]===opt ? ' sel' : '');
+      chip.textContent = opt;
+      chip.onclick = ()=>{
+        if(multi){
+          const arr = FILTER_STATE[key];
+          const i = arr.indexOf(opt);
+          if(i>=0) arr.splice(i,1); else arr.push(opt);
+        } else FILTER_STATE[key] = FILTER_STATE[key]===opt ? '' : opt;
+        chip.classList.toggle('sel');
+        applyFilters();
+      };
+      el.appendChild(chip);
+    });
+  };
+  renderChips('filterTA', MASTER_DATA.therapeuticAreas, 'ta');
+  renderChips('filterPhase', MASTER_DATA.phases, 'phase');
+  renderChips('filterModality', MASTER_DATA.modalities, 'modality');
+
+  document.getElementById('filterStatus').onchange = ()=>{ FILTER_STATE.status = document.getElementById('filterStatus').value; applyFilters(); };
+  document.getElementById('filterRegion').onchange = ()=>{ FILTER_STATE.region = document.getElementById('filterRegion').value; applyFilters(); };
+  document.getElementById('filterLead').onchange = ()=>{ FILTER_STATE.lead = document.getElementById('filterLead').value; applyFilters(); };
+  document.getElementById('filterFYQ').onchange = ()=>{ FILTER_STATE.fyq = document.getElementById('filterFYQ').value; applyFilters(); };
+
+  const budgetMin = document.getElementById('filterBudgetMin');
+  const budgetMax = document.getElementById('filterBudgetMax');
+  const budgetVal = document.getElementById('filterBudgetVal');
+  function updateBudgetVal(){
+    FILTER_STATE.budgetMin = +budgetMin.value;
+    FILTER_STATE.budgetMax = +budgetMax.value;
+    if(FILTER_STATE.budgetMin > FILTER_STATE.budgetMax) budgetMax.value = FILTER_STATE.budgetMin;
+    FILTER_STATE.budgetMax = +budgetMax.value;
+    budgetVal.textContent = `$${FILTER_STATE.budgetMin}M – $${FILTER_STATE.budgetMax}M`;
+    applyFilters();
+  }
+  if(budgetMin){ budgetMin.oninput = updateBudgetVal; }
+  if(budgetMax){ budgetMax.oninput = updateBudgetVal; }
+
+  const indInput = document.getElementById('filterIndication');
+  const indList = document.getElementById('filterIndicationList');
+  const indSel = document.getElementById('filterIndicationSelected');
+  if(indInput){
+    indInput.onfocus = ()=>{ indList.classList.add('open'); updateIndicationList(''); };
+    indInput.onblur = ()=>{ setTimeout(()=>indList.classList.remove('open'), 150); };
+    indInput.oninput = ()=> updateIndicationList(indInput.value);
+    function updateIndicationList(q){
+      const ql = q.toLowerCase();
+      const matches = MASTER_DATA.indications.filter(i=>i.toLowerCase().includes(ql) && !FILTER_STATE.indication.includes(i));
+      indList.innerHTML = matches.slice(0,8).map(i=>`<div class="filter-search-item" data-val="${i}">${i}</div>`).join('');
+      indList.querySelectorAll('.filter-search-item').forEach(item=>{
+        item.onclick = ()=>{ FILTER_STATE.indication.push(item.dataset.val); indInput.value=''; updateIndicationList(''); renderIndicationSelected(); applyFilters(); };
+      });
+    }
+    function renderIndicationSelected(){
+      indSel.innerHTML = FILTER_STATE.indication.map(i=>`<span class="filter-chip sel">${i}<span class="fc-x" data-val="${i}">×</span></span>`).join('');
+      indSel.querySelectorAll('.fc-x').forEach(x=>{ x.onclick = (e)=>{ e.stopPropagation(); FILTER_STATE.indication = FILTER_STATE.indication.filter(v=>v!==x.dataset.val); renderIndicationSelected(); applyFilters(); }; });
+    }
+  }
+
+  document.getElementById('assetSearch').oninput = (e)=>{
+    FILTER_STATE.assetSearch = e.target.value;
+    const q = e.target.value.trim().toLowerCase();
+    const ac = document.getElementById('assetAutocomplete');
+    if(!q){ ac.classList.remove('open'); ac.innerHTML=''; applyFilters(); return; }
+    const matches = MASTER_DATA.programs.filter(p=>p.id.toLowerCase().includes(q)||p.name.toLowerCase().includes(q)||p.ta.toLowerCase().includes(q)||(p.indication&&p.indication.toLowerCase().includes(q))||(p.alias&&p.alias.some(a=>a.toLowerCase().includes(q)))).slice(0,6);
+    ac.innerHTML = matches.map(p=>{
+      const disp = (p.alias && p.alias.some(a=>a.toLowerCase().includes(q))) ? `${p.alias.find(a=>a.toLowerCase().includes(q))} (${p.id})` : p.id;
+      return `<div class="asset-autocomplete-item" data-id="${p.id}"><span>${disp}</span><span class="aa-meta">${p.ta} · ${p.phase}</span></div>`;
+    }).join('');
+    ac.classList.add('open');
+    ac.querySelectorAll('.asset-autocomplete-item').forEach(item=>{
+      item.onclick = ()=>{ const v = item.dataset.id; document.getElementById('assetSearch').value = v; FILTER_STATE.assetSearch = v; ac.classList.remove('open'); applyFilters(); };
+    });
+  };
+  document.getElementById('assetSearch').onblur = ()=>{ setTimeout(()=>document.getElementById('assetAutocomplete').classList.remove('open'), 180); };
+
+  document.getElementById('filterClear').onclick = ()=>{
+    FILTER_STATE.assetSearch=''; FILTER_STATE.ta=[]; FILTER_STATE.phase=[]; FILTER_STATE.status=''; FILTER_STATE.indication=[];
+    FILTER_STATE.region=''; FILTER_STATE.modality=[]; FILTER_STATE.lead=''; FILTER_STATE.budgetMin=0; FILTER_STATE.budgetMax=50;
+    document.getElementById('assetSearch').value='';
+    document.getElementById('filterIndication').value='';
+    const indSel = document.getElementById('filterIndicationSelected');
+    if(indSel) indSel.innerHTML='';
+    document.getElementById('filterStatus').value=''; document.getElementById('filterRegion').value=''; document.getElementById('filterLead').value='';
+    document.getElementById('filterBudgetMin').value=0; document.getElementById('filterBudgetMax').value=50; document.getElementById('filterBudgetVal').textContent='$0M – $50M';
+    initFilters(); applyFilters();
+  };
+
+  document.getElementById('filterToggle').onclick = ()=>{
+    const sb = document.getElementById('filterSidebar');
+    const btn = document.getElementById('filterToggle');
+    sb.classList.toggle('collapsed');
+    btn.textContent = sb.classList.contains('collapsed') ? '▶' : '◀';
+    btn.title = sb.classList.contains('collapsed') ? 'Expand filters' : 'Collapse filters';
+    btn.setAttribute('aria-label', btn.title);
+  };
+}
+
+function applyFilters(){
+  const k = DASHBOARD_DATA.kpis || {};
+  document.querySelectorAll('.kpi-val').forEach((el,i)=>{
+    const kpis = [String(k.activeAssets ?? 47), k.patientsEnrolled ?? '12,840', k.totalBudget ?? '$2.3B', String(k.atRisk ?? 6), k.avgPTRS ?? '34%'];
+    if(kpis[i]!==undefined) el.textContent = kpis[i];
+  });
+  if(tabInits[0]){ initHeatmap(); if(typeof initDriftChart==='function') initDriftChart(); }
+  if(tabInits[1]){ initBubble(); initStacked(); initDonut(); }
+}
+
+/* ================================================================
+   TAB SWITCHING
+================================================================ */
+let tabInits = [true, false, false];
+function switchTab(i){
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('on', i===j));
+  document.querySelectorAll('.panel').forEach((p,j)=>p.classList.toggle('on', i===j));
+  if(!tabInits[i]){ tabInits[i]=true; if(i===1) initTab2(); if(i===2) initTab3(); }
+}
+
+/* ================================================================
+   CHART 1 — PHASE DISTRIBUTION FUNNEL (custom canvas)
+================================================================ */
+function drawFunnel(){
+  const cv = document.getElementById('cFunnel');
+  // Sync drawing buffer to CSS-rendered width so it fills the card
+  cv.width = cv.clientWidth || 380;
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  ctx.clearRect(0,0,W,H);
+
+  const stages = DASHBOARD_DATA.funnel?.stages?.length ? DASHBOARD_DATA.funnel.stages : [
+    {label:'Discovery',count:42,color:'#93C5FD',tc:'#1E3A8A'},{label:'Pre-Clinical',count:28,color:'#60A5FA',tc:'#1E3A8A'},
+    {label:'Phase I',count:18,color:'#3B82F6',tc:'#FFFFFF'},{label:'Phase II',count:11,color:'#4F46E5',tc:'#EEF2FF'},
+    {label:'Phase III',count:6,color:'#4338CA',tc:'#C7D2FE'},{label:'Regulatory',count:2,color:'#312E81',tc:'#A5B4FC'},
+  ];
+
+  const maxC  = stages[0]?.count || 1;
+  const lPad  = 90, rPad = 82, tPad = 16, bPad = 16;
+  const chartW = W - lPad - rPad;
+  const rowH   = (H - tPad - bPad) / stages.length;
+  const cx     = lPad + chartW / 2;          // horizontal center of funnel area
+  const MIN_LABEL_W = 78;                     // min bar width to show text inside
+  const pctX   = W - 8;                       // fixed right-edge position for % labels
+
+  stages.forEach((s, i) => {
+    const ratio = s.count / maxC;
+    const barW  = chartW * ratio;
+    const x     = lPad + (chartW - barW) / 2; // centered within chartW
+    const y     = tPad + i * rowH;
+    const gap   = 3;
+
+    // ── Draw trapezoid ──────────────────────────────────
+    ctx.fillStyle = s.color;
+    ctx.beginPath();
+    if(i < stages.length - 1){
+      const nr  = stages[i+1].count / maxC;
+      const nBW = chartW * nr;
+      const nx  = lPad + (chartW - nBW) / 2;
+      ctx.moveTo(x,       y + gap);
+      ctx.lineTo(x + barW,y + gap);
+      ctx.lineTo(nx + nBW,y + rowH - gap);
+      ctx.lineTo(nx,      y + rowH - gap);
+    } else {
+      ctx.moveTo(x,       y + gap);
+      ctx.lineTo(x + barW,y + gap);
+      ctx.lineTo(x + barW,y + rowH - gap);
+      ctx.lineTo(x,       y + rowH - gap);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // subtle outline for depth
+    ctx.strokeStyle = 'rgba(0,0,0,.07)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // ── Left stage label ────────────────────────────────
+    ctx.fillStyle = '#475569';
+    ctx.font = '11px Segoe UI, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(s.label, lPad - 8, y + rowH / 2 + 4);
+
+    // ── Count label: inside bar if wide enough, else just after bar edge ──
+    ctx.font = 'bold 12px Segoe UI, sans-serif';
+    if (barW >= MIN_LABEL_W) {
+      ctx.fillStyle = s.tc;
+      ctx.textAlign = 'center';
+      ctx.fillText(s.count + ' assets', cx, y + rowH / 2 + 5);
+    } else {
+      // Too narrow — place count just to the right of the bar's edge
+      ctx.fillStyle = '#334155';
+      ctx.textAlign = 'left';
+      const countLabel = s.count + ' assets';
+      ctx.fillText(countLabel, x + barW + 6, y + rowH / 2 + 5);
+    }
+
+    // ── % label — always pinned to the far right edge ──
+    ctx.fillStyle = '#94A3B8';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round(s.count / maxC * 100) + '%', pctX, y + rowH / 2 + 4);
+  });
+}
+
+/* ================================================================
+   CHART 5 — SUNBURST (custom canvas)
+================================================================ */
+function drawSunburst(){
+  const cv = document.getElementById('cSunburst');
+  cv.width = cv.clientWidth || 420;           // sync buffer to CSS-rendered width
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+
+  // Scale rings to fill available space (leave 80px at bottom for legend)
+  const LEGEND_H = 80;
+  const maxR  = Math.floor(Math.min(W, H - LEGEND_H) / 2) - 6;
+  const scale = maxR / 134;                   // 134 was the original outer radius
+  const r0 = 0;
+  const r1 = Math.round(42 * scale);
+  const r2 = Math.round(88 * scale);
+  const r3 = maxR;
+  const cx = W / 2, cy = (H - LEGEND_H) / 2 + 4;
+  ctx.clearRect(0,0,W,H);
+
+  const areas = DASHBOARD_DATA.sunburst?.areas?.length ? DASHBOARD_DATA.sunburst.areas : [
+    { name:'Oncology', color:'#E11D48', children:[{ name:'Breast Ca.', v:8, phases:[3,3,2] },{ name:'Lung Ca.', v:6, phases:[3,2,1] },{ name:'Hematology', v:5, phases:[2,2,1] }]},
+    { name:'Neurology', color:'#8B5CF6', children:[{ name:"Alzheimer's", v:7, phases:[3,2,2] },{ name:"Parkinson's", v:4, phases:[2,2] }]},
+    { name:'Immunology', color:'#06B6D4', children:[{ name:'Rheumatoid', v:6, phases:[3,2,1] },{ name:'Psoriasis', v:4, phases:[2,2] },{ name:'IBD', v:3, phases:[2,1] }]},
+    { name:'Cardiology', color:'#F59E0B', children:[{ name:'Heart Fail.', v:5, phases:[2,2,1] },{ name:'Hypertens.', v:3, phases:[2,1] }]},
+  ];
+
+  const total = areas.reduce((s,a)=>s+a.children.reduce((ss,c)=>ss+c.v,0),0);
+  const phaseColors = ['#93C5FD','#60A5FA','#3730A3'];
+
+  let angle = -Math.PI/2;
+  areas.forEach(area => {
+    const aVal  = area.children.reduce((s,c)=>s+c.v,0);
+    const aSpan = aVal/total * Math.PI*2;
+
+    // inner ring (TA)
+    ctx.fillStyle = area.color;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r1,angle,angle+aSpan);
+    ctx.closePath();
+    ctx.fill();
+
+    // TA label (radial)
+    const mid = angle + aSpan/2;
+    const lx  = cx + Math.cos(mid) * (r1+r2)/2;
+    const ly  = cy + Math.sin(mid) * (r1+r2)/2;
+    ctx.save();
+    ctx.translate(lx,ly);
+    ctx.rotate(mid + (mid > Math.PI/2 && mid < 3*Math.PI/2 ? Math.PI : 0));
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${Math.max(8, Math.round(9 * scale))}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(area.name, 0, 3);
+    ctx.restore();
+
+    // middle ring (indications)
+    let cAngle = angle;
+    area.children.forEach(child => {
+      const cSpan = child.v/total * Math.PI*2;
+      ctx.fillStyle = hex2rgba(area.color, 0.55);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx,cy,r2, cAngle, cAngle+cSpan);
+      ctx.arc(cx,cy,r1, cAngle+cSpan, cAngle, true);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+
+      // Indication count label (middle ring)
+      const icMid = cAngle + cSpan/2;
+      const icR = (r1 + r2) / 2;
+      const icX = cx + Math.cos(icMid) * icR;
+      const icY = cy + Math.sin(icMid) * icR;
+      ctx.fillStyle = '#1E293B';
+      ctx.font = '9px Segoe UI,sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(child.v, icX, icY + 3);
+
+      // outer ring (phases)
+      let pAngle = cAngle;
+      child.phases.forEach((p,pi) => {
+        const pSpan = (p/child.v) * cSpan;
+        ctx.fillStyle = phaseColors[pi % phaseColors.length];
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx,cy,r3, pAngle, pAngle+pSpan);
+        ctx.arc(cx,cy,r2, pAngle+pSpan, pAngle, true);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        pAngle += pSpan;
+      });
+      cAngle += cSpan;
+    });
+
+    angle += aSpan;
+  });
+
+  // center hub
+  ctx.fillStyle = '#0F172A';
+  ctx.beginPath(); ctx.arc(cx,cy,r1-2,0,Math.PI*2); ctx.fill();
+  const numSz  = Math.max(11, Math.round(14 * scale));
+  const lblSz  = Math.max(8,  Math.round(9  * scale));
+  ctx.fillStyle = '#F8FAFC';
+  ctx.textAlign = 'center';
+  ctx.font = `bold ${numSz}px sans-serif`; ctx.fillText(String(DASHBOARD_DATA.sunburst?.totalAssets ?? 47), cx, cy + numSz*0.35);
+  ctx.font = `${lblSz}px sans-serif`; ctx.fillStyle = '#94A3B8';
+  ctx.fillText('assets', cx, cy + numSz*0.35 + lblSz + 2);
+
+  // legend — two columns centred below the chart
+  const legY  = cy + r3 + 12;
+  const legX  = Math.max(8, W/2 - 120);
+  ctx.font = '12px sans-serif';
+  areas.forEach((a,i) => {
+    const y = legY + i*17;
+    ctx.fillStyle = a.color;
+    ctx.fillRect(legX, y, 10, 10);
+    ctx.fillStyle = '#334155';
+    ctx.textAlign = 'left';
+    ctx.fillText(a.name, legX+14, y+9);
+  });
+
+  // phase legend (right of centre)
+  const phLegX = W/2 + 20;
+  ['Phase I','Phase II','Phase III'].forEach((p,i) => {
+    const y = legY + i*17;
+    ctx.fillStyle = phaseColors[i];
+    ctx.fillRect(phLegX, y, 10, 10);
+    ctx.fillStyle = '#334155';
+    ctx.textAlign = 'left';
+    ctx.fillText(p, phLegX+14, y+9);
+  });
+}
+
+/* ================================================================
+   CHART 2 — NESTED GANTT (custom canvas)
+================================================================ */
+const GANTT_STATE = { expanded: { 0:true, 1:true, 2:false } };
+
+function drawGantt(){
+  const cv = document.getElementById('cGantt');
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+
+  const g = DASHBOARD_DATA.gantt || {};
+  const start = new Date(g.timelineStart || '2024-01-01');
+  const end   = new Date(g.timelineEnd || '2027-06-01');
+  const span  = end - start;
+  const lPad = 190, rPad = 16, tPad = 38, rH = 32;
+
+  const chartW = W - lPad - rPad;
+  const toX = d => lPad + ((new Date(d) - start) / span) * chartW;
+
+  const programs = DASHBOARD_DATA.gantt?.programs?.length ? DASHBOARD_DATA.gantt.programs : [
+    {id:0,name:'PRG-001  Oncology',color:'#0F766E',start:'2024-01-15',end:'2026-12-31',studies:[{name:'001-A  Ph.I',start:'2024-01-15',end:'2024-10-01',fpi:'2024-02-01',lpo:'2024-09-01',ms:'2024-06-01'},{name:'001-B  Ph.II',start:'2024-06-01',end:'2026-03-01',fpi:'2024-07-01',lpo:'2025-12-01',ms:'2025-03-01'}]},
+    {id:1,name:'PRG-002  Neurology',color:'#0F766E',start:'2024-03-01',end:'2027-03-01',studies:[{name:'002-A  Ph.II',start:'2024-03-01',end:'2025-09-01',fpi:'2024-04-01',lpo:'2025-08-01',ms:'2024-12-01'},{name:'002-B  Ph.III',start:'2025-01-01',end:'2027-03-01',fpi:'2025-02-01',lpo:'2026-12-01',ms:'2026-06-01'}]},
+    {id:2,name:'PRG-003  Immunology',color:'#0F766E',start:'2024-06-01',end:'2026-06-01',studies:[{name:'003-A  Ph.I',start:'2024-06-01',end:'2025-06-01',fpi:'2024-07-01',lpo:'2025-05-01',ms:'2024-12-01'}]},
+    {id:3,name:'PRG-004  Cardiology',color:'#0F766E',start:'2025-01-01',end:'2026-09-01',studies:[{name:'004-A  Ph.II',start:'2025-01-01',end:'2026-09-01',fpi:'2025-02-01',lpo:'2026-07-01',ms:'2025-09-01'}]},
+  ];
+  // pre-compute row heights
+  GANTT_STATE.rowMap = [];
+  programs.forEach(p => {
+    GANTT_STATE.rowMap.push({ type:'prog', prog:p });
+    if(GANTT_STATE.expanded[p.id]) p.studies.forEach(s => GANTT_STATE.rowMap.push({ type:'study', study:s }));
+  });
+
+  const totalRows = GANTT_STATE.rowMap.length;
+  cv.height = tPad + totalRows * rH + 20;
+  ctx.clearRect(0,0,W,cv.height);
+  ctx.fillStyle = '#F8FAFC'; ctx.fillRect(0,0,W,cv.height);
+
+  // Quarter grid lines + labels
+  let d = new Date('2024-01-01');
+  while(d < end){
+    const x = toX(d.toISOString().slice(0,10));
+    ctx.strokeStyle = d.getMonth()%3===0 ? '#CBD5E1' : '#F1F5F9';
+    ctx.lineWidth   = d.getMonth()%3===0 ? 1 : 0.5;
+    ctx.beginPath(); ctx.moveTo(x,tPad-14); ctx.lineTo(x,cv.height); ctx.stroke();
+    if(d.getMonth()%3===0){
+      ctx.fillStyle = '#94A3B8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText(`Q${Math.floor(d.getMonth()/3)+1} '${String(d.getFullYear()).slice(2)}`, x+3, tPad-4);
+    }
+    d.setMonth(d.getMonth()+1);
+  }
+
+  // Today line
+  const todayX = toX(g.today || '2026-03-07');
+  ctx.strokeStyle='#EF4444'; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(todayX,tPad-14); ctx.lineTo(todayX,cv.height); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw rows
+  GANTT_STATE.rowMap.forEach((row,i) => {
+    const y = tPad + i*rH;
+    const isProg = row.type==='prog';
+
+    ctx.fillStyle = isProg ? '#F0FDF4' : '#FAFAFA';
+    ctx.fillRect(0, y, W, rH-1);
+
+    // label
+    ctx.fillStyle = isProg ? '#0F172A' : '#475569';
+    ctx.font = isProg ? 'bold 11px Segoe UI' : '10px Segoe UI';
+    ctx.textAlign = 'left';
+    const arrow = isProg ? (GANTT_STATE.expanded[row.prog.id] ? '▾ ' : '▸ ') : '   └ ';
+    ctx.fillText(arrow + (isProg ? row.prog.name : row.study.name), 6, y + rH/2 + 4);
+
+    if(isProg){
+      const p = row.prog;
+      const x1 = toX(p.start), x2 = toX(p.end);
+      ctx.fillStyle = '#0F766E';
+      ctx.beginPath(); ctx.roundRect(x1, y+8, x2-x1, rH-16, 3); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.7)';
+      ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center';
+    } else {
+      const s = row.study;
+      const x1 = toX(s.start), x2 = toX(s.end);
+      // background track
+      ctx.fillStyle = '#E2E8F0';
+      ctx.beginPath(); ctx.roundRect(x1, y+11, x2-x1, rH-22, 3); ctx.fill();
+      // actual bar
+      ctx.fillStyle = '#5EEAD4';
+      ctx.beginPath(); ctx.roundRect(x1, y+11, x2-x1, rH-22, 3); ctx.fill();
+      // FPI dot
+      const fpX = toX(s.fpi);
+      ctx.fillStyle = '#0F766E';
+      ctx.beginPath(); ctx.arc(fpX, y+rH/2, 4, 0, Math.PI*2); ctx.fill();
+      // LPO dot
+      const lpX = toX(s.lpo);
+      ctx.fillStyle = '#0F766E';
+      ctx.beginPath(); ctx.arc(lpX, y+rH/2, 4, 0, Math.PI*2); ctx.fill();
+      // milestone diamond
+      const mX = toX(s.ms);
+      ctx.fillStyle = '#10B981';
+      ctx.save(); ctx.translate(mX, y+rH/2); ctx.rotate(Math.PI/4);
+      ctx.fillRect(-5,-5,10,10); ctx.restore();
+    }
+  });
+
+  // Click handler to toggle expand
+  cv.onclick = (e) => {
+    const rect = cv.getBoundingClientRect();
+    const my = (e.clientY - rect.top) * (cv.height / rect.height);
+    const ri = Math.floor((my - tPad) / rH);
+    if(ri >= 0 && ri < GANTT_STATE.rowMap.length){
+      const row = GANTT_STATE.rowMap[ri];
+      if(row.type === 'prog'){
+        GANTT_STATE.expanded[row.prog.id] = !GANTT_STATE.expanded[row.prog.id];
+        drawGantt();
+      }
+    }
+  };
+}
+
+/* ================================================================
+   CHART 3 — S-CURVE (Chart.js)
+================================================================ */
+function initSCurve(){
+  const sc = DASHBOARD_DATA.sCurve || {};
+  const labels = sc.labels || ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const planned = sc.planned || [], actual = sc.actual || [], forecast = sc.forecast || [];
+  new Chart(document.getElementById('cSCurve'),{
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        { label:'Planned', data:planned, borderColor:'#D97706', borderDash:[7,4], borderWidth:2, pointRadius:0, fill:false, tension:0.4 },
+        { label:'Actual', data:actual, borderColor:'#1E3A8A', backgroundColor:'rgba(30,58,138,.07)', borderWidth:2.5,
+          pointRadius:3, pointBackgroundColor:'#1E3A8A', fill:true, tension:0.4, spanGaps:false },
+        { label:'Forecast', data:forecast, borderColor:'#1E3A8A', borderDash:[4,4], borderWidth:1.5, pointRadius:0,
+          fill:false, tension:0.4, spanGaps:false },
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false}, tooltip:{mode:'index', intersect:false},
+        datalabels:{display:false}
+      },
+      scales:{
+        y:{ title:{display:true,text:'Cumulative Patients',font:{size:10}}, grid:{color:'#F1F5F9'}, ticks:{font:{size:10}} },
+        x:{ title:{display:true,text:'Month',font:{size:10}}, grid:{display:false}, ticks:{font:{size:10}} }
+      }
+    }
+  });
+}
+
+/* ================================================================
+   CHART 4 — ASSET HEALTH HEATMAP (HTML table)
+================================================================ */
+function initHeatmap(){
+  const hm = DASHBOARD_DATA.heatmap || {};
+  const areas = hm.areas || ['Oncology','Neurology','Immunology','Cardiology','Rare Disease'];
+  const progs = hm.progs || ['PRG-A','PRG-B','PRG-C','PRG-D','PRG-E'];
+  const progToId = hm.progToId || {'PRG-A':'PRG-001','PRG-B':'PRG-002','PRG-C':'PRG-003','PRG-D':'PRG-004','PRG-E':'PRG-005'};
+  const C = hm.statusColors || { 'T':'#34D399', 'R':'#FBBF24', 'X':'#EF4444' };
+  const L = hm.statusLabels || { 'T':'On Track','R':'At Risk','X':'Critical' };
+  const icons = hm.statusIcons || { 'T':'✓','R':'!','X':'✕' };
+  const data = hm.data || [['T','T','R','T','T'],['R','T','X','T','R'],['T','T','T','R','T'],['T','X','R','T','T'],['R','T','T','T','R']];
+  const ids = getFilteredProgramIds();
+  const filterTA = FILTER_STATE.ta.length ? FILTER_STATE.ta : null;
+  const filterProgs = ids.length ? ids : null;
+  const rowIndices = filterTA ? areas.map((a,i)=>filterTA.includes(a)?i:null).filter(i=>i!==null) : [0,1,2,3,4];
+  const colIndices = filterProgs ? progs.map((p,i)=>filterProgs.includes(progToId[p])?i:null).filter(i=>i!==null) : [0,1,2,3,4];
+  if(rowIndices.length===0) rowIndices.push(0);
+  if(colIndices.length===0) colIndices.push(0,1,2,3,4);
+  let h = '<table class="hm-table"><tr><th class="hm-th">Area</th>';
+  colIndices.forEach(ci=>{ h+=`<th class="hm-th">${progs[ci]}</th>`; });
+  h += '</tr>';
+  rowIndices.forEach(ri=>{
+    h += `<tr><td class="hm-row-lbl">${areas[ri]}</td>`;
+    colIndices.forEach(ci=>{
+      const s = data[ri][ci];
+      h += `<td><div class="hm-cell" style="background:${C[s]}" title="${areas[ri]} — ${L[s]}">${icons[s]}</div></td>`;
+    });
+    h += '</tr>';
+  });
+  h += '</table>';
+  document.getElementById('heatmapDiv').innerHTML = h;
+}
+
+/* ================================================================
+   CHART 6 — BUBBLE SCATTER (Chart.js)
+================================================================ */
+function initBubble(){
+  const allAssets = DASHBOARD_DATA.bubble?.assets || [];
+  const ids = getFilteredProgramIds();
+  const assets = ids.length ? allAssets.filter(a=>ids.includes(a.id)) : allAssets;
+  if(window.CHART_BUBBLE) { window.CHART_BUBBLE.destroy(); window.CHART_BUBBLE=null; }
+  window.CHART_BUBBLE = new Chart(document.getElementById('cBubble'),{
+    type:'bubble',
+    data:{
+      datasets:[{
+        label:'Assets',
+        data: assets.map(a=>({x:a.x,y:a.y,r:a.b/2})),
+        backgroundColor:'rgba(148,163,184,.38)',
+        borderColor:'#334155',
+        borderWidth:1.5,
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label:(ctx)=>{
+              const a=assets[ctx.dataIndex];
+              return [`${a.id} (${a.area})`,`PTRS: ${a.x}%`,`NPV: $${a.y}B`];
+            }
+          }
+        },
+        datalabels:{
+          anchor:'center',
+          align:'middle',
+          font:{size:9,weight:'bold'},
+          color:'#334155',
+          formatter:(v,ctx)=>{
+            return assets[ctx.dataIndex].id;
+          }
+        },
+        // Quadrant annotation via afterDraw
+      },
+      scales:{
+        x:{min:0,max:100,title:{display:true,text:'PTRS — Probability of Technical & Regulatory Success (%)'},grid:{color:'#F1F5F9'},ticks:{font:{size:10}}},
+        y:{min:0,title:{display:true,text:'NPV ($B)'},grid:{color:'#F1F5F9'},ticks:{font:{size:10}}}
+      }
+    },
+    plugins:[{
+      id:'quadrant',
+      afterDraw(chart){
+        const {ctx:c, chartArea:{left,right,top,bottom}, scales:{x,y}} = chart;
+        const mx = x.getPixelForValue(50), my = y.getPixelForValue(2.5);
+        c.save();
+        c.strokeStyle='rgba(100,116,139,.3)'; c.lineWidth=1; c.setLineDash([4,4]);
+        c.beginPath(); c.moveTo(mx,top); c.lineTo(mx,bottom); c.stroke();
+        c.beginPath(); c.moveTo(left,my); c.lineTo(right,my); c.stroke();
+        c.setLineDash([]);
+        c.font='10px Segoe UI'; c.fillStyle='rgba(100,116,139,.6)'; c.textAlign='center';
+        c.fillText('Low PTRS / High NPV', left+(mx-left)/2, top+14);
+        c.fillText('High PTRS / High NPV', mx+(right-mx)/2, top+14);
+        c.fillText('Low PTRS / Low NPV',  left+(mx-left)/2, bottom-6);
+        c.fillText('High PTRS / Low NPV', mx+(right-mx)/2, bottom-6);
+        c.restore();
+      }
+    }]
+  });
+}
+
+/* ================================================================
+   CHART 7 — STACKED BAR (Chart.js)
+================================================================ */
+function initStacked(){
+  if(window.CHART_STACKED) { window.CHART_STACKED.destroy(); window.CHART_STACKED=null; }
+  const st = DASHBOARD_DATA.stacked || {};
+  const stLabels = st.labels || ['AMBER-01','AMBER-02','NEXUS-01','NEXUS-02','PRISM-01','PRISM-02'];
+  const stDatasets = (st.datasets || []).map(d=>({...d, borderWidth:1}));
+  window.CHART_STACKED = new Chart(document.getElementById('cStacked'),{
+    type:'bar',
+    data:{
+      labels: stLabels,
+      datasets: stDatasets.length ? stDatasets : [
+        {label:'North America', data:[450,320,280,510,380,240], backgroundColor:'rgba(59,130,246,.75)', borderColor:'#3B82F6', borderWidth:1},
+        {label:'Europe', data:[280,410,350,290,420,310], backgroundColor:'rgba(94,234,212,.65)', borderColor:'#5EEAD4', borderWidth:1},
+        {label:'APAC', data:[180,150,280,200,160,190], backgroundColor:'rgba(253,186,116,.70)', borderColor:'#FDBA74', borderWidth:1},
+        {label:'LATAM', data:[90,70,110,80,60,100], backgroundColor:'rgba(139,92,246,.75)', borderColor:'#8B5CF6', borderWidth:1},
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{position:'bottom',labels:{font:{size:12},boxWidth:10,padding:10}},
+        datalabels:{
+          anchor:'center',align:'center',
+          font:{size:10,weight:'bold'},color:'#0F172A',
+          formatter:(v)=>v>0?v:null
+        }
+      },
+      scales:{
+        x:{stacked:true, title:{display:true,text:'Study',font:{size:10}}, grid:{display:false}, ticks:{font:{size:10}}},
+        y:{stacked:true, title:{display:true,text:'Patients Enrolled'}, grid:{color:'#F1F5F9'}, ticks:{font:{size:10}}}
+      }
+    }
+  });
+}
+
+/* ================================================================
+   CHART 8 — DONUT (Chart.js)
+================================================================ */
+function initDonut(){
+  if(window.CHART_DONUT) { window.CHART_DONUT.destroy(); window.CHART_DONUT=null; }
+  const dn = DASHBOARD_DATA.donut || {};
+  const dnLabels = dn.labels || ['Pre-Clinical','Phase I','Phase II','Phase III','Regulatory'];
+  const dnData = dn.data || [15,22,35,20,8];
+  const dnColors = dn.colors || ['#3B82F6','#10B981','#F59E0B','#8B5CF6','#EC4899'];
+  window.CHART_DONUT = new Chart(document.getElementById('cDonut'),{
+    type:'doughnut',
+    data:{
+      labels: dnLabels,
+      datasets:[{
+        data: dnData,
+        backgroundColor: dnColors,
+        borderWidth:3, borderColor:'#fff',
+        hoverOffset:10,
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      cutout:'62%',
+      plugins:{
+        legend:{
+          position:'bottom',
+          labels:{font:{size:12},boxWidth:12,padding:14}
+        },
+        tooltip:{callbacks:{label:c=>`${c.label}: ${c.parsed}%`}},
+        datalabels:{
+          anchor:'center',align:'center',
+          font:{size:11,weight:'bold'},color:'#0F172A',
+          formatter:(v)=>`${v}%`
+        }
+      }
+    }
+  });
+}
+
+/* ================================================================
+   CHART 9 — BULLET GRAPH (custom canvas)
+================================================================ */
+function drawBullet(){
+  const cv = document.getElementById('cBullet');
+  cv.width = cv.clientWidth || 420;           // sync drawing buffer to CSS width
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  ctx.clearRect(0,0,W,H);
+
+  const metrics = DASHBOARD_DATA.bullet?.metrics?.length ? DASHBOARD_DATA.bullet.metrics : [
+    {label:'AMBER-01 Enrollment',target:500,actual:420,max:600,sat:400},{label:'NEXUS-02 Enrollment',target:380,actual:395,max:500,sat:300},
+    {label:'PRISM-01 Sites',target:45,actual:32,max:60,sat:35},{label:'AMBER-02 Sites',target:30,actual:28,max:40,sat:25},
+    {label:'Query Resolution(d)',target:14,actual:20,max:30,sat:18,invert:true},
+  ];
+
+  const lP = 158, rP = 14, tP = 28, bP = 36;
+  const cW  = W - lP - rP;
+  const rH  = (H - tP - bP) / metrics.length;
+  const bH  = Math.round(rH * 0.32);         // bar height = 32% of row height
+
+  // X-axis guide
+  ctx.fillStyle='#94A3B8'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('← Poor    Satisfactory    Good →', lP + cW/2, tP - 10);
+
+  metrics.forEach((m, i) => {
+    const y   = tP + i * rH;
+    const by  = y + (rH - bH) / 2;
+    const ext = Math.round(bH * 0.65);       // range band extends ±ext above/below bar
+    const sc  = cW / m.max;
+
+    // Qualitative background bands
+    ctx.fillStyle='#CBD5E1'; ctx.fillRect(lP,                       by-ext, m.sat*0.5*sc,               bH+ext*2);
+    ctx.fillStyle='#E2E8F0'; ctx.fillRect(lP + m.sat*0.5*sc,        by-ext, (m.sat - m.sat*0.5)*sc,     bH+ext*2);
+    ctx.fillStyle='#F1F5F9'; ctx.fillRect(lP + m.sat*sc,            by-ext, (m.max - m.sat)*sc,         bH+ext*2);
+
+    // Actual bar
+    const onTarget = m.invert ? m.actual <= m.target : m.actual >= m.target;
+    ctx.fillStyle = onTarget ? '#2563EB' : '#EF4444';
+    ctx.beginPath();
+    ctx.roundRect(lP, by, m.actual * sc, bH, 3);
+    ctx.fill();
+
+    // Target marker
+    ctx.strokeStyle='#0F172A'; ctx.lineWidth=2.5;
+    ctx.beginPath();
+    ctx.moveTo(lP + m.target*sc, by - ext - 2);
+    ctx.lineTo(lP + m.target*sc, by + bH + ext + 2);
+    ctx.stroke();
+
+    // Row label (left)
+    ctx.fillStyle='#334155'; ctx.font='bold 10px Segoe UI, sans-serif'; ctx.textAlign='right';
+    ctx.fillText(m.label, lP - 8, by + bH/2 + 4);
+
+    // Actual / target value (right of bar)
+    ctx.fillStyle='#475569'; ctx.font='10px sans-serif'; ctx.textAlign='left';
+    ctx.fillText(`${m.actual} / ${m.target}`, lP + m.actual*sc + 6, by + bH/2 + 3);
+  });
+
+  // Legend row
+  const ly = H - 16;
+  const legItems = [['#CBD5E1','Poor'],['#E2E8F0','Satisfactory'],['#F1F5F9','Good'],['#2563EB','Actual'],['#0F172A','Target']];
+  const legTotalW = legItems.length * 86;
+  const legX0 = lP + (cW - legTotalW) / 2;   // center legend under chart area
+
+  legItems.forEach(([c, l], i) => {
+    const lx = legX0 + i * 86;
+    ctx.fillStyle = c;
+    ctx.fillRect(lx, ly - 10, 11, 11);
+    if(c === '#0F172A'){
+      ctx.strokeStyle = '#94A3B8'; ctx.lineWidth = 1;
+      ctx.strokeRect(lx, ly - 10, 11, 11);
+    }
+    ctx.fillStyle='#64748B'; ctx.font='12px sans-serif'; ctx.textAlign='left';
+    ctx.fillText(l, lx + 14, ly);
+  });
+}
+
+/* ================================================================
+   CHART 10 — WATERFALL (Chart.js floating bars)
+================================================================ */
+function initWaterfall(){
+  const wf = DASHBOARD_DATA.waterfall || {};
+  const data = wf.data || [[0,2800],[2320,2800],[2160,2320],[1820,2160],[0,1820]];
+  const colors = wf.colors || ['#059669','#F43F5E','#F43F5E','#F43F5E','#059669'];
+  const labels = wf.labels || ['Screened','I/E Criteria\n(−480)','Consent\n(−160)','Screen Fail\n(−340)','Randomized'];
+
+  new Chart(document.getElementById('cWaterfall'),{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{
+        data, backgroundColor:colors,
+        borderRadius:4, borderSkipped:false,
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=>{
+          const [lo,hi]=c.raw; return `Patients: ${hi-lo}`;
+        }}},
+        datalabels:{
+          anchor:'end',align:'top',
+          font:{size:10,weight:'bold'},color:'#0F172A',
+          formatter:(v,ctx)=>{
+            const [lo,hi]=ctx.raw; const d=hi-lo;
+            return d!==0?d:null;
+          }
+        }
+      },
+      scales:{
+        x:{title:{display:true,text:'Stage',font:{size:10}},grid:{display:false},ticks:{font:{size:10}}},
+        y:{title:{display:true,text:'Patients'},grid:{color:'#F1F5F9'},ticks:{font:{size:10}}}
+      }
+    }
+  });
+}
+
+/* ================================================================
+   CHART 11 — SANKEY DIAGRAM (custom canvas)
+================================================================ */
+function drawSankey(){
+  const cv = document.getElementById('cSankey');
+  const OW = 500, OH = 280;                   // original design dimensions
+  cv.width = cv.clientWidth || OW;            // sync buffer to CSS-rendered width
+  const W = cv.width, H = cv.height;          // H comes from the height="" attribute
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  ctx.scale(W / OW, H / OH);                 // scale all coordinates to fill canvas
+
+  const nW = 14;
+  const sk = DASHBOARD_DATA.sankey || {};
+  const nodesArr = sk.nodes || [];
+  const flows = sk.flows || [];
+  const nodes = nodesArr.length ? Object.fromEntries(nodesArr.map(n=>[n.id, n])) : {
+    'Screened':{x:20,y:40,h:200,color:'#A78BFA'},'Enrolled':{x:160,y:40,h:140,color:'#8B5CF6'},'Screen Fail':{x:160,y:195,h:45,color:'#F43F5E'},'Arm A':{x:300,y:40,h:68,color:'#60A5FA'},'Arm B':{x:300,y:118,h:62,color:'#3B82F6'},'Withdrawn':{x:430,y:40,h:22,color:'#FB923C'},'Completed A':{x:430,y:68,h:40,color:'#34D399'},'Completed B':{x:430,y:118,h:44,color:'#10B981'},'Discontinued':{x:430,y:168,h:18,color:'#FB923C'}
+  };
+  const flowsData = flows.length ? flows : [{f:'Screened',t:'Enrolled',v:0.70},{f:'Screened',t:'Screen Fail',v:0.30},{f:'Enrolled',t:'Arm A',v:0.50},{f:'Enrolled',t:'Arm B',v:0.50},{f:'Arm A',t:'Withdrawn',v:0.25},{f:'Arm A',t:'Completed A',v:0.75},{f:'Arm B',t:'Completed B',v:0.72},{f:'Arm B',t:'Discontinued',v:0.28}];
+
+  // Draw flows
+  flowsData.forEach(({f,t,v}) => {
+    const fn = nodes[f], tn = nodes[t];
+    const thick = Math.max(4, v * Math.min(fn.h, tn.h) * 0.78);
+    const x1 = fn.x + nW, y1 = fn.y + fn.h*0.5;
+    const x2 = tn.x,      y2 = tn.y + tn.h*0.5;
+    const mx  = (x1+x2)/2;
+    const my  = (y1+y2)/2;
+
+    const gr = ctx.createLinearGradient(x1,0,x2,0);
+    gr.addColorStop(0, hex2rgba(fn.color, 0.35));
+    gr.addColorStop(1, hex2rgba(tn.color, 0.35));
+    ctx.strokeStyle = gr; ctx.lineWidth = thick;
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.bezierCurveTo(mx,y1, mx,y2, x2,y2);
+    ctx.stroke();
+
+    // Flow percentage label
+    ctx.fillStyle = '#475569';
+    ctx.font = '9px Segoe UI,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(Math.round(v*100)+'%', mx, my-6);
+  });
+
+  // Draw nodes + labels
+  Object.entries(nodes).forEach(([name,n]) => {
+    ctx.fillStyle = n.color;
+    ctx.beginPath(); ctx.roundRect(n.x, n.y, nW, n.h, 3); ctx.fill();
+    ctx.fillStyle='#1E293B'; ctx.font='10px Segoe UI,sans-serif'; ctx.textAlign='left';
+    ctx.fillText(name, n.x+nW+5, n.y+n.h/2+4);
+  });
+
+  ctx.restore();
+}
+
+/* ================================================================
+   CHART 12 — BOX PLOT (custom canvas)
+================================================================ */
+function drawBoxPlot(){
+  const cv = document.getElementById('cBoxplot');
+  cv.width = cv.clientWidth || 500;           // sync buffer to CSS-rendered width
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;          // H comes from height="" attribute
+  ctx.clearRect(0,0,W,H);
+
+  const regions = DASHBOARD_DATA.boxPlot?.regions?.length ? DASHBOARD_DATA.boxPlot.regions : [
+    {name:'North America', data:[38,42,45,48,52,58,60,65,68,75,90,110]},
+    {name:'Europe', data:[55,60,62,70,75,78,85,88,95,120,140,145]},
+    {name:'APAC', data:[75,80,85,95,100,105,115,120,130,160,200,210]},
+    {name:'LATAM', data:[88,90,92,100,110,115,125,130,145,180,220,230]},
+  ];
+
+  const lP=120, rP=28, tP=38, bP=42;
+  const cW=W-lP-rP, cH=H-tP-bP;
+  const minV=0, maxV=260;
+  const toX = v => lP + (v-minV)/(maxV-minV)*cW;
+  const rowH = cH/regions.length;
+  const bH = Math.round(rowH * 0.40);         // box height scales with row height
+
+  // Title
+  ctx.fillStyle='#64748B'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('Days to Site Activation', lP+cW/2, tP-8);
+
+  // Grid
+  [0,50,100,150,200,250].forEach(v=>{
+    const x=toX(v);
+    ctx.strokeStyle='#E2E8F0'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x,tP); ctx.lineTo(x,H-bP); ctx.stroke();
+    ctx.fillStyle='#94A3B8'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(v+'d', x, H-bP+14);
+  });
+
+  regions.forEach((r,i)=>{
+    const sorted = [...r.data].sort((a,b)=>a-b);
+    const n=sorted.length;
+    const q1 = sorted[Math.floor(n*0.25)];
+    const med= sorted[Math.floor(n*0.5)];
+    const q3 = sorted[Math.floor(n*0.75)];
+    const iqr= q3-q1;
+    const wlo= Math.max(sorted[0], q1-1.5*iqr);
+    const whi= Math.min(sorted[n-1], q3+1.5*iqr);
+    const outs= sorted.filter(v=>v<wlo||v>whi);
+
+    const cy = tP + i*rowH + rowH/2;
+
+    // whisker
+    ctx.strokeStyle='#64748B'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(toX(wlo),cy); ctx.lineTo(toX(whi),cy); ctx.stroke();
+    [wlo,whi].forEach(v=>{
+      ctx.beginPath(); ctx.moveTo(toX(v),cy-bH/3); ctx.lineTo(toX(v),cy+bH/3); ctx.stroke();
+    });
+
+    // IQR box
+    ctx.fillStyle='#64748B';
+    ctx.fillRect(toX(q1), cy-bH/2, toX(q3)-toX(q1), bH);
+
+    // median
+    ctx.strokeStyle='#F8FAFC'; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(toX(med),cy-bH/2); ctx.lineTo(toX(med),cy+bH/2); ctx.stroke();
+
+    // outliers
+    outs.forEach(v=>{
+      ctx.fillStyle='#F97316';
+      ctx.beginPath(); ctx.arc(toX(v),cy,4,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.lineWidth=1;
+      ctx.stroke();
+    });
+
+    // label
+    ctx.fillStyle='#334155'; ctx.font='10px Segoe UI,sans-serif'; ctx.textAlign='right';
+    ctx.fillText(r.name, lP-6, cy+4);
+
+    // median value
+    ctx.fillStyle='#1E3A8A'; ctx.font='bold 10px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(med+'d', toX(med), cy-bH/2-4);
+  });
+
+  // legend
+  ctx.fillStyle='#F97316'; ctx.beginPath(); ctx.arc(lP+8,H-10,4,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#64748B'; ctx.font='12px sans-serif'; ctx.textAlign='left';
+  ctx.fillText('Outlier', lP+16, H-7);
+}
+
+/* ================================================================
+   CHART 13 — RADAR (Chart.js)
+================================================================ */
+function initRadar(){
+  const rd = DASHBOARD_DATA.radar || {};
+  const rdLabels = rd.labels || ['Data Quality','Recruitment\nSpeed','Protocol\nCompliance','Query\nResolution','Site\nManagement','Reporting\nTimeliness'];
+  const rdDatasets = (rd.datasets || []).map(d=>({...d, borderWidth:2, pointBackgroundColor:d.borderColor, pointRadius:4}));
+  new Chart(document.getElementById('cRadar'),{
+    type:'radar',
+    data:{
+      labels: rdLabels,
+      datasets: rdDatasets.length ? rdDatasets : [
+        {label:'CRO Alpha', data:[82,68,91,75,85,79], backgroundColor:'rgba(204,251,241,.45)', borderColor:'#0D9488', borderWidth:2, pointBackgroundColor:'#0D9488', pointRadius:4},
+        {label:'CRO Beta', data:[70,85,72,88,65,71], backgroundColor:'rgba(165,180,252,.3)', borderColor:'#6366F1', borderWidth:2, borderDash:[5,3], pointBackgroundColor:'#6366F1', pointRadius:4},
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom',labels:{font:{size:12},boxWidth:12,padding:12}},
+        datalabels:{
+          anchor:'end',align:'center',
+          font:{size:10,weight:'bold'},color:'#334155',
+          formatter:(v)=>v
+        }
+      },
+      scales:{
+        r:{ min:0,max:100,
+          ticks:{stepSize:20,font:{size:10},backdropColor:'transparent'},
+          grid:{color:'#E2E8F0'},
+          pointLabels:{font:{size:10},color:'#475569'}
+        }
+      }
+    }
+  });
+}
+
+/* ================================================================
+   CHART 14 — CALENDAR HEATMAP (HTML)
+================================================================ */
+function initCalendar(){
+  const container = document.getElementById('calDiv');
+
+  // ── Deterministic pseudo-random ───────────────────────
+  function sr(s){ const x = Math.sin(s + 7) * 99991; return x - Math.floor(x); }
+
+  // ── Date range ────────────────────────────────────────
+  const cal = DASHBOARD_DATA.calendar || {};
+  const START = cal.startDate ? new Date(cal.startDate) : new Date(2025, 2, 8);
+  const END   = cal.endDate ? new Date(cal.endDate) : new Date(2026, 2, 7);
+
+  // Align grid to Sunday-based weeks
+  const gridStart = new Date(START);
+  gridStart.setDate(gridStart.getDate() - gridStart.getDay()); // prev/same Sunday
+  // gridStart = Mar 2, 2025 (Sunday)
+
+  const gridEnd = new Date(END);
+  const eDow = gridEnd.getDay();
+  if(eDow !== 6) gridEnd.setDate(gridEnd.getDate() + (6 - eDow));
+  // gridEnd = Mar 7, 2026 (already Saturday — no adjustment needed)
+
+  const TOTAL_DAYS  = Math.round((gridEnd - gridStart) / 86400000) + 1; // 371
+  const TOTAL_WEEKS = TOTAL_DAYS / 7;                                    // 53
+
+  // ── Blue palette ──────────────────────────────────────
+  const COLORS  = cal.colors || ['#EFF6FF', '#BFDBFE', '#60A5FA', '#2563EB', '#1E3A8A'];
+  const BORDERS = cal.borders || ['#DBEAFE', 'transparent', 'transparent', 'transparent', 'transparent'];
+
+  // ── Render function (called on init + resize) ─────────
+  function render(){
+    const DAY_LBL_W = 20;
+    const GAP       = 2;
+    const availW    = (container.clientWidth || 640) - DAY_LBL_W - GAP;
+    // Cell size: fill full width with all 53 columns
+    const cellSize  = Math.max(8, Math.floor((availW - GAP * TOTAL_WEEKS) / TOTAL_WEEKS));
+    const r         = Math.max(1, Math.floor(cellSize / 5));
+
+    // ── Build cell data + collect month label positions ──
+    const weekData    = [];
+    const monthLabels = []; // { xpx, text }
+    let lastMonth     = -1;
+
+    for(let w = 0; w < TOTAL_WEEKS; w++){
+      const days = [];
+      for(let d = 0; d < 7; d++){
+        const date = new Date(gridStart);
+        date.setDate(date.getDate() + w * 7 + d);
+        const inRange = date >= START && date <= END;
+
+        // Track first day of each new month that is within range
+        if(inRange && date.getMonth() !== lastMonth){
+          const xpx = w * (cellSize + GAP);
+          const lbl  = date.toLocaleString('en-US', { month: 'short' })
+                     + " '" + String(date.getFullYear()).slice(2);
+          monthLabels.push({ xpx, text: lbl });
+          lastMonth = date.getMonth();
+        }
+
+        const seed = w * 7 + d;
+        let val = -1;
+        if(inRange){
+          val = sr(seed);
+          const mo = date.getMonth(), yr = date.getFullYear();
+          // Spike: summer 2025
+          if(yr === 2025 && mo >= 5 && mo <= 7) val = Math.min(1, val + 0.32);
+          // Spike: Dec 2025 – Feb 2026 (year-end reporting rush)
+          if((yr === 2025 && mo === 11) || (yr === 2026 && mo <= 1)) val = Math.min(1, val + 0.24);
+        }
+
+        const ci      = val < 0 ? -1 : val < 0.28 ? 0 : val < 0.50 ? 1 : val < 0.70 ? 2 : val < 0.88 ? 3 : 4;
+        const queries = ci <= 0 ? 0 : Math.round((ci + 1) * 13 + sr(seed + 300) * 9);
+        const label   = date.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+        days.push({ inRange, ci, queries, label });
+      }
+      weekData.push(days);
+    }
+
+    // ── Assemble HTML ────────────────────────────────────
+    const gridW = TOTAL_WEEKS * (cellSize + GAP) - GAP;
+    let html = '';
+
+    // Month label row (absolutely positioned inside relative container)
+    html += `<div style="position:relative;height:13px;margin-left:${DAY_LBL_W + GAP}px;margin-bottom:4px;width:${gridW}px">`;
+    monthLabels.forEach(ml => {
+      html += `<div style="position:absolute;left:${ml.xpx}px;font-size:10px;color:#94A3B8;white-space:nowrap;line-height:13px">${ml.text}</div>`;
+    });
+    html += '</div>';
+
+    // Body row: day labels + week columns
+    html += `<div style="display:flex;align-items:flex-start;gap:${GAP}px">`;
+
+    // Day-of-week labels (Sun-start: Mon=1, Wed=3, Fri=5)
+    const dayNames = ['', 'M', '', 'W', '', 'F', ''];
+    html += `<div style="display:flex;flex-direction:column;gap:${GAP}px;width:${DAY_LBL_W}px;flex-shrink:0">`;
+    dayNames.forEach(lbl => {
+      html += `<div style="height:${cellSize}px;font-size:10px;color:#94A3B8;line-height:${cellSize}px;text-align:right;padding-right:3px">${lbl}</div>`;
+    });
+    html += '</div>';
+
+    // Week columns
+    html += `<div style="display:flex;gap:${GAP}px;flex-shrink:0">`;
+    weekData.forEach(days => {
+      html += `<div style="display:flex;flex-direction:column;gap:${GAP}px">`;
+      days.forEach(({ inRange, ci, queries, label }) => {
+        if(inRange){
+          const bg    = COLORS[Math.max(0, ci)];
+          const bd    = ci === 0 ? BORDERS[0] : 'transparent';
+          const title = `${label}: ${queries} queries`;
+          html += `<div class="cal-sq" style="width:${cellSize}px;height:${cellSize}px;border-radius:${r}px;background:${bg};border:1px solid ${bd}" title="${title}"></div>`;
+        } else {
+          html += `<div style="width:${cellSize}px;height:${cellSize}px;border-radius:${r}px;background:#F8FAFC;border:1px solid #EFF6FF;box-sizing:border-box"></div>`;
+        }
+      });
+      html += '</div>';
+    });
+    html += '</div>'; // week columns
+    html += '</div>'; // body row
+
+    // Legend
+    html += `<div style="display:flex;align-items:center;gap:4px;margin-top:10px;font-size:12px;color:#94A3B8">`;
+    html += '<span>Less</span>';
+    COLORS.forEach((c, i) => {
+      html += `<div style="width:${cellSize}px;height:${cellSize}px;border-radius:${r}px;background:${c};border:1px solid ${BORDERS[i]||'transparent'};flex-shrink:0;box-sizing:border-box"></div>`;
+    });
+    html += '<span>More queries</span></div>';
+
+    container.innerHTML = html;
+  }
+
+  render();
+
+  // Re-render on window resize (debounced)
+  let _rt;
+  window.addEventListener('resize', () => { clearTimeout(_rt); _rt = setTimeout(render, 90); });
+}
+
+/* ================================================================
+   CHART 15 — CHOROPLETH MAP (custom canvas with simplified map)
+================================================================ */
+function drawChoropleth(){
+  const cv  = document.getElementById('cChoropleth');
+  // Sync drawing buffer to the CSS-rendered width; maintain original 1060×380 aspect ratio
+  const OW = 1060, OH = 380;
+  cv.width  = cv.clientWidth  || OW;
+  cv.height = Math.round(cv.width * OH / OW);
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const s = W / OW;                         // uniform scale factor
+
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+
+  // Ocean background (pre-scale so it covers exactly the canvas)
+  const seaGrad = ctx.createLinearGradient(0,0,0,H);
+  seaGrad.addColorStop(0,'#F3F1F1'); seaGrad.addColorStop(1,'#F3F1F1');
+  ctx.fillStyle = seaGrad; ctx.fillRect(0,0,W,H);
+
+  // Apply scale — all subsequent coordinates use the original 1060×380 space
+  ctx.scale(s, s);
+
+  // Country rectangles — simplified cartogram layout
+  const countries = DASHBOARD_DATA.choropleth?.countries || [
+    {n:'Canada', sites:42, x:48, y:30, w:175, h:70},
+    {n:'USA', sites:145, x:48, y:100, w:175, h:110},
+    {n:'Mexico',     sites:18, x:90,  y:210, w:90,  h:58},
+    {n:'Brazil',     sites:30, x:172, y:230, w:110, h:100},
+    {n:'Argentina',  sites:15, x:182, y:330, w:72,  h:68},
+    // Europe
+    {n:'UK',         sites:55, x:355, y:55,  w:38,  h:38},
+    {n:'Germany',    sites:68, x:398, y:55,  w:50,  h:52},
+    {n:'France',     sites:48, x:355, y:97,  w:50,  h:48},
+    {n:'Spain',      sites:32, x:350, y:148, w:52,  h:44},
+    {n:'Italy',      sites:38, x:406, y:108, w:36,  h:60},
+    {n:'Netherlands',sites:22, x:398, y:40,  w:40,  h:16},
+    {n:'Poland',     sites:25, x:446, y:55,  w:48,  h:52},
+    {n:'Sweden',     sites:19, x:440, y:20,  w:40,  h:36},
+    // Russia
+    {n:'Russia',     sites:35, x:494, y:30,  w:220, h:100},
+    // Middle East
+    {n:'Turkey',     sites:20, x:494, y:128, w:70,  h:36},
+    {n:'Israel',     sites:18, x:494, y:162, w:28,  h:28},
+    {n:'UAE',        sites:12, x:530, y:162, w:38,  h:28},
+    // Africa
+    {n:'S. Africa',  sites:14, x:450, y:295, w:65,  h:62},
+    {n:'Nigeria',    sites:8,  x:408, y:240, w:50,  h:55},
+    {n:'Egypt',      sites:10, x:460, y:200, w:50,  h:45},
+    // South Asia
+    {n:'India',      sites:65, x:620, y:145, w:100, h:120},
+    // East / SE Asia
+    {n:'China',      sites:88, x:718, y:85,  w:145, h:125},
+    {n:'Japan',      sites:52, x:862, y:80,  w:45,  h:85},
+    {n:'S. Korea',   sites:28, x:850, y:148, w:42,  h:34},
+    {n:'Australia',  sites:20, x:820, y:278, w:110, h:85},
+    {n:'Thailand',   sites:16, x:720, y:215, w:48,  h:50},
+    {n:'Taiwan', sites:14, x:818, y:170, w:34, h:32},
+  ];
+
+  const maxSites = Math.max(...countries.map(c=>c.sites));
+
+  countries.forEach(c => {
+    const t = c.sites / maxSites;
+    // Color: light grey → deep navy
+    const col = lerpColor('#FFFFFF','#F9A8D4', t);
+    ctx.fillStyle = col;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(c.x, c.y, c.w, c.h, 4);
+    ctx.fill(); ctx.stroke();
+
+    // Country name
+    const fontSize = Math.max(8, Math.min(11, c.w/7));
+    ctx.fillStyle = '#334155';
+    ctx.font = `bold ${fontSize}px Segoe UI,sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(c.n, c.x+c.w/2, c.y+c.h/2-4);
+
+    // Site count
+    ctx.font = `${fontSize-1}px sans-serif`;
+    ctx.fillStyle = '#64748B';
+    ctx.fillText(`${c.sites} sites`, c.x+c.w/2, c.y+c.h/2+10);
+  });
+
+  // Region labels
+  const regionLabels = [
+    {n:'NORTH AMERICA', x:133, y:22},
+    {n:'LATIN AMERICA', x:215, y:222},
+    {n:'EUROPE',        x:410, y:20},
+    {n:'RUSSIA / CIS',  x:604, y:20},
+    {n:'MIDDLE EAST',   x:598, y:143},
+    {n:'AFRICA',        x:440, y:222},
+    {n:'SOUTH ASIA',    x:667, y:138},
+    {n:'EAST ASIA',     x:800, y:68},
+    {n:'OCEANIA',       x:875, y:268},
+  ];
+  regionLabels.forEach(r=>{
+    ctx.fillStyle='rgba(71,85,105,.65)';
+    ctx.font='8px Segoe UI,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(r.n, r.x, r.y);
+  });
+
+  // Color scale legend — top-right corner (original 1060×380 coordinate space)
+  const lgW=160, lgH=10, lgMargin=16;
+  const lgX = OW - lgW - lgMargin;   // right-aligned with 16px margin
+  const lgY = lgMargin + 18;         // 16px from top + room for label above
+
+  // Semi-transparent backing card for readability
+  ctx.fillStyle = 'rgba(255,255,255,0.82)';
+  ctx.beginPath();
+  ctx.roundRect(lgX - 8, lgY - 20, lgW + 16, lgH + 36, 5);
+  ctx.fill();
+
+  // Label
+  ctx.fillStyle='#1E293B'; ctx.font='bold 9.5px Segoe UI,sans-serif'; ctx.textAlign='center';
+  ctx.fillText('Site Density', lgX + lgW/2, lgY - 7);
+
+  // Gradient bar
+  const gr2 = ctx.createLinearGradient(lgX, 0, lgX + lgW, 0);
+  gr2.addColorStop(0,'#FFFFFF'); gr2.addColorStop(1,'#F9A8D4');
+  ctx.fillStyle = gr2; ctx.fillRect(lgX, lgY, lgW, lgH);
+  ctx.strokeStyle='#E2C8D0'; ctx.lineWidth=1; ctx.strokeRect(lgX, lgY, lgW, lgH);
+
+  // Low / High labels
+  ctx.fillStyle='#64748B'; ctx.font='8.5px sans-serif';
+  ctx.textAlign='left';  ctx.fillText('Low',  lgX,        lgY + lgH + 11);
+  ctx.textAlign='right'; ctx.fillText('High', lgX + lgW,  lgY + lgH + 11);
+
+  ctx.restore();  // remove the scale transform
+}
+
+/* ================================================================
+   CHART 16 — PORTFOLIO MILESTONE WATERFALL / TIMELINE DRIFT (Chart.js)
+================================================================ */
+function initDriftChart(){
+  const ms = DASHBOARD_DATA.drift?.milestones || [
+    // PRG-001  Oncology  ($580M)
+    { prog:'PRG-001', lbl:'Trial Start',  base:[0,2],   curr:[0,2],   on:true  },
+    { prog:'PRG-001', lbl:'Last Pat. In', base:[10,14], curr:[12,16], on:false },
+    { prog:'PRG-001', lbl:'NDA Filing',   base:[26,28], curr:[30,32], on:false },
+    // PRG-002  Neurology  ($520M)
+    { prog:'PRG-002', lbl:'Trial Start',  base:[2,4],   curr:[2,4],   on:true  },
+    { prog:'PRG-002', lbl:'Last Pat. In', base:[15,20], curr:[15,20], on:true  },
+    { prog:'PRG-002', lbl:'NDA Filing',   base:[32,34], curr:[34,36], on:false },
+    // PRG-003  Immunology  ($460M)
+    { prog:'PRG-003', lbl:'Trial Start',  base:[4,6],   curr:[4,6],   on:true  },
+    { prog:'PRG-003', lbl:'Last Pat. In', base:[12,16], curr:[13,17], on:false },
+    { prog:'PRG-003', lbl:'NDA Filing',   base:[24,26], curr:[25,27], on:false },
+    // PRG-004  Oncology  ($440M)
+    { prog:'PRG-004', lbl:'Trial Start',  base:[6,8],   curr:[6,8],   on:true  },
+    { prog:'PRG-004', lbl:'Last Pat. In', base:[18,22], curr:[18,22], on:true  },
+    { prog:'PRG-004', lbl:'NDA Filing',   base:[30,32], curr:[30,32], on:true  },
+    // PRG-005  Neurology  ($390M)
+    { prog:'PRG-005', lbl:'Trial Start',  base:[1,3],   curr:[3,5],   on:false },
+    { prog:'PRG-005', lbl:'Last Pat. In', base:[16,20], curr:[18,22], on:false },
+    { prog:'PRG-005', lbl:'NDA Filing', base:[28,30], curr:[32,34], on:false },
+  ];
+
+  const labels = ms.map(m => `${m.prog}  ${m.lbl}`);
+
+  /* Quarter label helper: month-offset → "Q2'25" */
+  const toQtr = n => {
+    const d = new Date(2024, n);
+    return `Q${Math.floor(d.getMonth()/3)+1}\u2019${String(d.getFullYear()).slice(2)}`;
+  };
+
+  const BLUE='rgba(59,130,246,.80)', ROSE='rgba(244,63,94,.80)', GREY='rgba(148,163,184,.50)';
+  const BLUE_B='#3B82F6', ROSE_B='#F43F5E', GREY_B='#94A3B8';
+
+  const ids = getFilteredProgramIds();
+  const msFiltered = ids.length ? ms.filter(m=>ids.includes(m.prog)) : ms;
+  const labelsFiltered = msFiltered.map(m => `${m.prog}  ${m.lbl}`);
+
+  if(window.CHART_DRIFT) { window.CHART_DRIFT.destroy(); window.CHART_DRIFT=null; }
+  window.CHART_DRIFT = new Chart(document.getElementById('cDrift'),{
+    type:'bar',
+    data:{
+      labels: labelsFiltered,
+      datasets:[
+        {
+          label:'Baseline (Plan)',
+          data: msFiltered.map(m=>m.base),
+          backgroundColor: GREY,
+          borderColor: GREY_B,
+          borderWidth: 1,
+          borderRadius: 3,
+          borderSkipped: false,
+          barPercentage: 0.5,
+          categoryPercentage: 0.85,
+        },
+        {
+          label:'Current Projection',
+          data: msFiltered.map(m=>m.curr),
+          backgroundColor: msFiltered.map(m=>m.on ? BLUE : ROSE),
+          borderColor:      msFiltered.map(m=>m.on ? BLUE_B : ROSE_B),
+          borderWidth: 1.5,
+          borderRadius: 3,
+          borderSkipped: false,
+          barPercentage: 0.5,
+          categoryPercentage: 0.85,
+        }
+      ]
+    },
+    options:{
+      indexAxis:'y',
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{ display:false },
+        datalabels:{ display:false },
+        tooltip:{
+          callbacks:{
+            title: items => {
+              const m = msFiltered[items[0].dataIndex];
+              return `${m.prog} — ${m.lbl}`;
+            },
+            label: ctx => {
+              const [s,e] = ctx.raw;
+              const drift = msFiltered[ctx.dataIndex].on ? '✓ On Schedule' : '⚠ Delayed';
+              const tag   = ctx.datasetIndex===1 ? `  (${drift})` : '';
+              return `${ctx.dataset.label}: ${toQtr(s)} → ${toQtr(e)}${tag}`;
+            }
+          }
+        }
+      },
+      scales:{
+        x:{
+          min:0, max:38,
+          title:{ display:true, text:'Qtrs from Jan 2024', font:{size:10} },
+          ticks:{
+            stepSize:3,
+            font:{size:10},
+            callback: v => v%3===0 ? toQtr(v) : ''
+          },
+          grid:{ color:'#F1F5F9' }
+        },
+        y:{
+          ticks:{ font:{size:10}, color:'#475569' },
+          grid:{ display:false }
+        }
+      }
+    },
+    plugins:[{
+      id:'driftBands',
+      beforeDraw(chart){
+        const {ctx:c, chartArea:{left,right}, scales:{y}} = chart;
+        /* Shade alternating program groups (every 3 rows) */
+        [1,3].forEach(p => {
+          const top    = y.getPixelForValue(p*3-0.5);
+          const bottom = y.getPixelForValue(p*3+2.5);
+          c.save();
+          c.fillStyle='rgba(241,245,249,.55)';
+          c.fillRect(left, bottom, right-left, top-bottom);
+          c.restore();
+        });
+      }
+    }]
+  });
+}
+
+/* ================================================================
+   BOOT — Tab 1
+================================================================ */
+loadDashboardData();
+initFilters();
+applyFilters();
+drawFunnel();
+drawSunburst();
+drawGantt();
+initSCurve();
+initHeatmap();
+initDriftChart();
+
+function initTab2(){
+  initBubble();
+  initStacked();
+  initDonut();
+  drawBullet();
+  initWaterfall();
+}
+function initTab3(){
+  drawSankey();
+  drawBoxPlot();
+  initRadar();
+  initCalendar();
+  drawChoropleth();
+}
+
+/* ================================================================
+   USER DOCUMENTATION — injected as ? button on every chart header
+================================================================ */
+const VIZ_DOCS = {
+  'Phase Distribution': `
+    <strong>How to Read This Chart</strong>
+    <ul>
+      <li>Each trapezoid represents one development phase (Pre-clinical → Regulatory Filing).</li>
+      <li>Width is proportional to asset count — wider = more programs in that phase.</li>
+      <li>A funnel shape (wide top, narrow bottom) is normal — attrition reduces programs as they advance.</li>
+    </ul>
+    <span class="doc-section">What to Look For</span>
+    <ul>
+      <li>Thin Phase II/III relative to Pre-Clinical → long-term revenue risk.</li>
+      <li>Sudden large drop between adjacent phases → high attrition; investigate root causes.</li>
+    </ul>
+    <span class="doc-section">Tip</span>
+    Numbers outside the bar indicate the stage is too narrow to label inline — read the count to the right of the % figure.`,
+
+  'Therapeutic Area': `
+    <strong>How to Read This Chart</strong>
+    <ul>
+      <li>Start at the center and move outward: <b>TA → Indication → Phase</b>.</li>
+      <li>Arc length = relative number of assets at that level.</li>
+    </ul>
+    <span class="doc-section">What to Look For</span>
+    <ul>
+      <li>One dominant TA slice → portfolio concentration risk.</li>
+      <li>Outer ring with all one phase color → lack of late-stage assets.</li>
+    </ul>
+    <span class="doc-section">Tip</span>
+    A balanced outer ring with mixed Phase I/II/III colors indicates a well-diversified pipeline.`,
+
+  'Program Timeline': `
+    <strong>How to Interact</strong>
+    <ul>
+      <li><b>Click any Program row (▸/▾)</b> to expand or collapse its studies.</li>
+      <li>Hover over bars and markers for detailed dates and study info.</li>
+    </ul>
+    <strong>How to Read This Chart</strong>
+    <ul>
+      <li>Horizontal bars = study duration; left edge = start, right edge = end.</li>
+      <li>Red dashed vertical line = Today's date.</li>
+      <li>Filled dots on bars = FPI (First Patient In) &amp; LPO (Last Patient Out).</li>
+      <li>Green diamond = key milestone (e.g., database lock, NDA filing).</li>
+    </ul>
+    <span class="doc-section">What to Look For</span>
+    <ul>
+      <li>Milestone diamond to the left of the Today line = past due; escalate immediately.</li>
+      <li>Bars extending far past Today = delayed studies; review resource allocation.</li>
+    </ul>`,
+
+  'Enrollment S-Curve': `
+    <strong>How to Read This Chart</strong>
+    <ul>
+      <li>X-axis = calendar time; Y-axis = cumulative patients enrolled.</li>
+      <li>Dashed amber line = Planned trajectory.</li>
+      <li>Solid navy line = Actual enrollment to date.</li>
+      <li>Dashed navy line = Forecast (projected from last actual data point).</li>
+    </ul>
+    <span class="doc-section">What to Look For</span>
+    <ul>
+      <li>Actual dipping below Planned = recruitment delay (act immediately).</li>
+      <li>Actual above Planned = over-enrollment risk — may need to pause screening.</li>
+    </ul>`,
+
+  'Asset Health': `
+    <strong>How to Read This Chart</strong>
+    <ul>
+      <li>Rows = Therapeutic Areas; Columns = Programs.</li>
+      <li>✓ Green = On Track &nbsp;|&nbsp; ! Yellow = At Risk &nbsp;|&nbsp; ✕ Red = Critical.</li>
+      <li>Hover any cell to see the full status label and program details.</li>
+    </ul>
+    <span class="doc-section">What to Look For</span>
+    <ul>
+      <li>A red/yellow cluster in one <b>row</b> → TA-level issue (resources, competitive landscape).</li>
+      <li>A red/yellow cluster in one <b>column</b> → program-wide operational problem.</li>
+    </ul>`,
+
+  'Risk vs. ROI Matrix (PTRS × NPV)': `
+    <strong>How to Read This Chart</strong>
+    <ul>
+      <li>X-axis = PTRS (Probability of Technical &amp; Regulatory Success, %).</li>
+      <li>Y-axis = NPV (Net Present Value, $B).</li>
+      <li>Bubble size = relative budget allocated to that asset.</li>
+    </ul>
+    <span class="doc-section">Quadrant Guide</span>
+    <ul>
+      <li><b>Top-right</b>: High PTRS + High NPV → prioritize &amp; fund.</li>
+      <li><b>Top-left</b>: High NPV but risky → watch closely, de-risk if possible.</li>
+      <li><b>Bottom-right</b>: High confidence but low return → consider out-licensing.</li>
+      <li><b>Bottom-left</b>: Low PTRS + Low NPV → evaluate for termination.</li>
+    </ul>
+    <span class="doc-section">Tip</span>
+    Hover a bubble to see asset ID, therapeutic area, PTRS %, and NPV.`,
+
+  'Enrollment by Region & Study': `
+    <strong>How to Read This Chart</strong>
+    <ul>
+      <li>Each bar = one study. Bar height = total patients enrolled.</li>
+      <li>Colors = geographic regions (North America, Europe, APAC, LATAM).</li>
+    </ul>
+    <span class="doc-section">What to Look For</span>
+    <ul>
+      <li>A bar dominated by a single color → geographic concentration risk.</li>
+      <li>Very short bars relative to peers → under-recruiting study.</li>
+    </ul>
+    <span class="doc-section">Tip</span>
+    If APAC is underrepresented, consider activating additional sites — APAC sites typically enroll faster once active.`,
+
+  'Budget Allocation by Phase': `
+    <strong>How to Read This Chart</strong>
+    <ul>
+      <li>Each segment's arc length = its share of total R&amp;D spend.</li>
+      <li>Center label always reflects the currently active filter's total budget.</li>
+    </ul>
+    <span class="doc-section">What to Look For</span>
+    <ul>
+      <li>Very large Pre-Clinical vs. small Phase III slice → underinvestment in confirmatory studies.</li>
+      <li>Use this to justify budget reallocation in portfolio reviews.</li>
+    </ul>
+    <span class="doc-section">Tip</span>
+    Hover any segment to see the exact percentage and estimated dollar allocation.`,
+
+  'Milestone Tracker': `
+    <strong>How to Read This Chart</strong>
+    <ul>
+      <li>Each row = one study metric (e.g., enrollment count or active sites).</li>
+      <li><b>Background bands</b>: Dark grey = Poor, Mid grey = Satisfactory, Light grey = Good.</li>
+      <li><b>Solid bar</b>: Actual performance. Blue = on/above target. Red = below target.</li>
+      <li><b>Thin black vertical line</b>: The target value for that metric.</li>
+    </ul>
+    <span class="doc-section">What to Look For</span>
+    Any metric where the bar sits entirely in the dark grey (Poor) zone requires immediate escalation.`,
+
+  'Screen Failure Cascade': `
+    <strong>How to Read This Chart</strong>
+    <ul>
+      <li>Read left to right — each bar is a step in the recruitment funnel.</li>
+      <li><b>Green bars</b>: Totals (Screened start; Randomized end).</li>
+      <li><b>Coral bars</b>: Patient losses at each stage.</li>
+    </ul>
+    <span class="doc-section">What to Look For</span>
+    <ul>
+      <li>Tall coral I/E bar → protocol eligibility criteria may be too restrictive.</li>
+      <li>Tall Screen Failure bar → site training or patient selection issues.</li>
+      <li>Tall Consent bar → patient-facing materials may need improvement.</li>
+    </ul>`,
+
+  'Patient Protocol Journey': `
+    <strong>How to Read This Chart</strong>
+    <ul>
+      <li>Read left to right — nodes (colored rectangles) are protocol stages.</li>
+      <li>Band thickness ∝ patient volume in that transition.</li>
+      <li>Bands narrowing = patients are leaving the study at that stage.</li>
+    </ul>
+    <span class="doc-section">What to Look For</span>
+    <ul>
+      <li>Thick bands flowing to withdrawal/dropout nodes = high attrition point.</li>
+      <li>Compare Arm A vs. Arm B band widths to assess arm balance.</li>
+    </ul>
+    <span class="doc-section">Tip</span>
+    Thick input + thin output at any node = the largest retention problem in your protocol.`,
+
+  'Site Activation Times': `
+    <strong>How to Read This Chart</strong>
+    <ul>
+      <li>Each row = one geographic region.</li>
+      <li><b>Box</b>: Middle 50% of sites (Q1 to Q3 interquartile range).</li>
+      <li><b>White line</b> inside box: Median activation time (days).</li>
+      <li><b>Whiskers</b>: Extend to min/max non-outlier values.</li>
+      <li><b>Orange dots</b>: Outlier sites taking unusually long to activate.</li>
+    </ul>
+    <span class="doc-section">What to Look For</span>
+    <ul>
+      <li>Long box (wide IQR) = high variability → inconsistent site support process.</li>
+      <li>Many orange dots → investigate those specific sites for regulatory or contracting blockers.</li>
+    </ul>`,
+
+  'Vendor / Site Performance': `
+    <strong>How to Read This Chart</strong>
+    <ul>
+      <li>Each axis = a KPI scored 0–100.</li>
+      <li>A larger filled area = stronger overall performance across all axes.</li>
+      <li>Multiple CROs are overlaid — compare the shapes directly.</li>
+    </ul>
+    <span class="doc-section">What to Look For</span>
+    <ul>
+      <li>"Dents" on specific axes = a CRO's weak area — raise in governance meetings.</li>
+      <li>Use the best-scoring CRO per axis to assign specialized tasks.</li>
+    </ul>
+    <span class="doc-section">Tip</span>
+    A CRO with a compact, consistent polygon across all axes is often more reliable than one with high peaks but deep dips.`,
+
+  'Data Query Volume': `
+    <strong>How to Read This Chart</strong>
+    <ul>
+      <li>Each square = one calendar day (like a GitHub contribution graph).</li>
+      <li>Color: White = 0 queries; Dark green = high query volume.</li>
+      <li>Hover any cell to see the exact date and query count.</li>
+    </ul>
+    <span class="doc-section">What to Look For</span>
+    <ul>
+      <li>Dark isolated squares = data submission events, site visits, or audit dates.</li>
+      <li>Dark horizontal clusters (weeks) = sustained data quality issues.</li>
+      <li>Recurring seasonal patterns = plan monitor resourcing proactively.</li>
+    </ul>`,
+
+  'Global Trial Footprint': `
+    <strong>How to Read This Chart</strong>
+    <ul>
+      <li>Country shading: Light grey = few/no sites; Deep navy = high site density.</li>
+      <li>Each country label shows the name and active site count.</li>
+    </ul>
+    <span class="doc-section">What to Look For</span>
+    <ul>
+      <li>Heavy concentration in 2–3 countries → geopolitical or supply chain risk.</li>
+      <li>Lightly shaded regions with few sites → untapped recruitment potential.</li>
+    </ul>
+    <span class="doc-section">Tip</span>
+    Use this view for site feasibility assessments and regulatory authority submissions that require geographic diversity data.`,
+
+  'Portfolio Milestone Waterfall': `
+    <strong>How to Read This Chart</strong>
+    <ul>
+      <li>Each row = one program milestone (Trial Start, Last Patient In, NDA Filing).</li>
+      <li>Grey bar = original baseline plan &nbsp;|&nbsp; Colored bar = current projection.</li>
+      <li><span style="color:#3B82F6">Blue</span> = on schedule &nbsp;|&nbsp; <span style="color:#F43F5E">Rose</span> = delayed vs. baseline.</li>
+    </ul>
+    <span class="doc-section">What to Look For</span>
+    <ul>
+      <li>A rose bar extending far past its grey baseline → milestone at risk of missing its window.</li>
+      <li>Multiple rose bars in one program → compounding delay; escalate immediately.</li>
+    </ul>
+    <span class="doc-section">Tip</span>
+    Focus on NDA Filing rows first — a delay there directly impacts launch date and market exclusivity.`,
+};
+
+/* Descriptions for each visualization (view definition) */
+const VIZ_DESCS = {
+  'Phase Distribution':
+    `<strong>Phase Distribution</strong>A categorically distributed view displaying the count of drug programs currently residing in each development stage (Pre-clinical through Regulatory Filing).`,
+
+  'Therapeutic Area':
+    `<strong>Therapeutic Area Split</strong>A proportional breakdown of the entire portfolio by medical specialty (e.g., Oncology, Rare Disease). The center "cutout" displays the total number of active programs.`,
+
+  'Risk vs. ROI Matrix (PTRS × NPV)':
+    `<strong>Program Health Matrix</strong>A 2D plot where the X-axis represents "Probability of Success" and the Y-axis represents "Estimated Market Value." The bubble size represents the total R&amp;D investment to date.`,
+
+  'Budget Allocation by Phase':
+    `<strong>Annual Budget Burn</strong>A time-series chart tracking actual cumulative expenditure versus the allocated annual budget. The "area" under the line is shaded to emphasize the volume of capital consumed.`,
+
+  'Milestone Tracker':
+    `<strong>Milestone Achievement Rate</strong>A circular chart where each segment's radius represents the percentage of milestones completed on time within different functional departments (e.g., Regulatory, Clinical Ops, Manufacturing).`,
+
+  'Program Timeline':
+    `<strong>Study Timeline</strong>A "Pseudo-Gantt" view where data points are arrays representing start and end dates. Each bar shows the duration of individual studies associated with a specific program.`,
+
+  'Enrollment S-Curve':
+    `<strong>Enrollment S-Curve</strong>A dual-line chart. One line represents the "Planned Patient Enrollment" over time (usually a sigmoid S-shape), and the second represents "Actual Patients Enrolled."`,
+
+  'Enrollment by Region & Study':
+    `<strong>Regional Enrollment</strong>A vertical bar for each study where the total height is the enrollment count, segmented by geographic regions (North America, EMEA, APAC).`,
+
+  'Screen Failure Cascade':
+    `<strong>Screen Failure Waterfall</strong>A waterfall-style chart that starts with "Total Screened" and shows the sequential "drop-offs" (Inclusion failure, Consent withdrawal) to arrive at the "Total Randomized."`,
+
+  'Site Activation Times':
+    `<strong>Site Activation Lead Time</strong>Displays the statistical distribution (min, max, median, and quartiles) of how many days it takes to activate clinical sites across different countries.`,
+
+  'Asset Health':
+    `<strong>Cost Per Patient by Study</strong>A simple comparison of the total study budget divided by the number of enrolled patients, identifying which trials are most capital-efficient.`,
+
+  'Vendor / Site Performance':
+    `<strong>Resource Utilization</strong>A spider-web chart showing how heavily different staff roles (Biostatistics, Data Management, Clinical Monitoring) are allocated to a program relative to their capacity.`,
+
+  'Data Query Volume':
+    `<strong>Data Query Volume</strong>Tracks the number of open medical data queries over the trial's duration. High volume indicates issues with data quality at specific clinical sites.`,
+
+  'Patient Protocol Journey':
+    `<strong>Vendor Performance Score</strong>A grouped bar chart comparing multiple Clinical Research Organizations (CROs) based on three metrics: Quality, Speed, and Cost-efficiency.`,
+
+  'Global Trial Footprint':
+    `<strong>Global Site Density</strong>A world map shaded by the number of active clinical trial sites in each country, providing a visual of the organization's global regulatory footprint.`,
+
+  'Portfolio Milestone Waterfall':
+    `<strong>Milestone Timeline Drift</strong>A horizontal floating-bar chart comparing the <em>original planned dates</em> (grey) against <em>current projected dates</em> (blue = on schedule, rose = delayed) for key milestones across the top programs by R&amp;D spend.`,
+};
+
+/* Single-pass injection: D (desc) button first, then i (guide) button */
+function injectHeaderButtons(){
+  document.querySelectorAll('.c-header').forEach(header => {
+    const titleEl = header.querySelector('.c-title');
+    if(!titleEl) return;
+    const title = titleEl.textContent.trim();
+
+    // ── D button ─────────────────────────────────────────
+    const desc = VIZ_DESCS[title];
+    if(desc){
+      const dBtn = document.createElement('div');
+      dBtn.className = 'desc-btn';
+      dBtn.setAttribute('aria-label', 'View definition for ' + title);
+      dBtn.innerHTML = `D<div class="desc-tip">${desc}</div>`;
+      header.appendChild(dBtn);
+    }
+
+    // ── i button ─────────────────────────────────────────
+    const doc = VIZ_DOCS[title];
+    if(doc){
+      const iBtn = document.createElement('div');
+      iBtn.className = 'doc-btn';
+      iBtn.setAttribute('aria-label', 'User guide for ' + title);
+      iBtn.innerHTML = `i<div class="doc-tip">${doc}</div>`;
+      header.appendChild(iBtn);
+    }
+  });
+}
+injectHeaderButtons();
+</script>
+</body>
+</html>

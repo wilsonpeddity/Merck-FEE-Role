@@ -1,0 +1,5 @@
+PROGRAM_ID,PROGRAM_NAME,THERAPEUTIC_AREA,DEVELOPMENT_PHASE,STATUS,NPV_MILLIONS,PROBABILITY_OF_SUCCESS
+P-101,OncoZen-Alpha,Oncology,Phase II,On Track,450.5,0.65
+P-102,NeuroFlow,Neurology,Phase I,At Risk,210.0,0.40
+P-103,CardioGuard,Cardiology,Phase III,On Track,890.2,0.85
+P-104,ImmunoBoost,Immunology,Pre-Clinical,On Track,120.0,0.15
